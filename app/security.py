@@ -80,8 +80,11 @@ def require_role(*roles: str):
     """
     Returns a FastAPI dependency that enforces role membership.
 
-    Usage:
+    Usage in dependencies list:
       dependencies=[Depends(require_role("analyst", "admin"))]
+
+    Usage as parameter injection:
+      user: User = Depends(require_role("analyst", "admin"))
     """
 
     def dependency(user: User = Depends(get_current_user)) -> User:
@@ -92,4 +95,4 @@ def require_role(*roles: str):
             )
         return user
 
-    return Depends(dependency)
+    return dependency

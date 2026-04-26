@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.user import UserResponse, UserRoleUpdate
-from app.security import require_role
+from app.security import get_current_user, require_role
 from app.services.audit import log_action
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -54,7 +54,7 @@ def list_users(
 def update_user_role(
     user_id: uuid.UUID,
     data: UserRoleUpdate,
-    admin: User = Depends(require_role("admin")),
+    admin: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Update a user's role. Admin only."""

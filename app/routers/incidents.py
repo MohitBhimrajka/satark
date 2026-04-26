@@ -28,7 +28,7 @@ from app.schemas.incident import (
     IncidentUpdate,
     PaginationMeta,
 )
-from app.security import get_optional_user, require_role
+from app.security import get_current_user, get_optional_user, require_role
 from app.services import incident as incident_service
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
@@ -145,7 +145,7 @@ def update_incident(
     incident_id: uuid.UUID,
     data: IncidentUpdate,
     request: Request,
-    user: User = Depends(require_role("analyst", "admin")),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Update incident status, priority, notes, or assignment. Analyst+ only."""

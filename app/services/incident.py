@@ -20,10 +20,27 @@ from app.services.storage import upload_file, validate_file
 
 
 def generate_case_number(db: Session) -> str:
-    """Generate a thread-safe case number using PostgreSQL SEQUENCE."""
-    result = db.execute(text("SELECT nextval('satark_case_seq')"))
-    seq = result.scalar()
+    """
+    Generate a thread-safe case number.
+    PostgreSQL: uses SEQUENCE (thread-safe).
+    SQLite (tests): falls back to MAX-based counter.
+    """
+    dialect = db.bind.dialect.name if db.bind else "sqlite"
     year = datetime.now().year
+
+    if dialect == "postgresql":
+        result = db.execute(text("SELECT nextval('satark_case_seq')"))
+        seq = result.scalar()
+    else:
+        # SQLite fallback for tests
+        result = db.execute(
+            text(
+                "SELECT COALESCE(MAX(CAST(SUBSTR(case_number, -5) AS INTEGER)), 0) + 1 "
+                "FROM incidents"
+            )
+        )
+        seq = result.scalar() or 1
+
     return f"{CASE_NUMBER_PREFIX}-{year}-{seq:05d}"
 
 

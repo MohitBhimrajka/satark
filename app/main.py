@@ -130,9 +130,13 @@ if settings.STORAGE_BACKEND == "local":
 
     from fastapi.staticfiles import StaticFiles
 
-    os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
-    app.mount(
-        "/uploads",
-        StaticFiles(directory=settings.LOCAL_UPLOAD_DIR),
-        name="uploads",
-    )
+    try:
+        os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
+        app.mount(
+            "/uploads",
+            StaticFiles(directory=settings.LOCAL_UPLOAD_DIR),
+            name="uploads",
+        )
+    except OSError:
+        pass  # Running outside Docker — uploads dir not available
+

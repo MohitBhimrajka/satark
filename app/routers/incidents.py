@@ -8,6 +8,7 @@ import uuid
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -30,6 +31,7 @@ from app.schemas.incident import (
 )
 from app.security import get_current_user, get_optional_user, require_role
 from app.services import incident as incident_service
+from app.services.ai.orchestrator import analyze_incident
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
@@ -37,6 +39,7 @@ router = APIRouter(prefix="/incidents", tags=["Incidents"])
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_incident(
     request: Request,
+    background_tasks: BackgroundTasks,
     input_type: str = Form(...),
     input_content: str | None = Form(None),
     description: str | None = Form(None),
@@ -56,6 +59,9 @@ async def create_incident(
     incident = await incident_service.create_incident(
         data=data, files=files or None, user=user, db=db, ip_address=ip
     )
+
+    # Trigger async AI analysis in background
+    background_tasks.add_task(analyze_incident, str(incident.id))
 
     response_data = IncidentResponse.model_validate(incident).model_dump()
     return {

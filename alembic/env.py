@@ -22,7 +22,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from app.core.database import Base
-from app.models import *  # Import all your models here
+from app.models import *  # noqa: F401, F403 — Import all models for auto-detection
 
 target_metadata = Base.metadata
 

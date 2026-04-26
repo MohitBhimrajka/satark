@@ -1,22 +1,25 @@
 # app/core/database.py
-import os
-
+"""
+Satark — Database Engine & Session Management.
+Uses SQLAlchemy 2.x with the modern DeclarativeBase pattern.
+"""
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+from .settings import settings
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Base class for all Satark ORM models."""
+
+    pass
 
 
-# Dependency to get a DB session
 def get_db():
+    """FastAPI dependency — yields a DB session per request."""
     db = SessionLocal()
     try:
         yield db

@@ -1,83 +1,28 @@
 # Progress Log
 
 ## Completed
-- [x] 2026-04-26: Researched SIH 2025 problem statements, selected PS 25210
-- [x] 2026-04-26: Researched Gemini 3 API (confirmed `gemini-3-flash-preview`, structured output patterns)
-- [x] 2026-04-26: Created `docs/00-project-overview.md` — complete project spec
-- [x] 2026-04-26: Created `docs/01-phase-1-foundation.md` — phase plan
-- [x] 2026-04-26: Created `docs/02-phase-2-backend-core.md` — phase plan
-- [x] 2026-04-26: Created `docs/03-phase-3-ai-pipeline.md` — phase plan
-- [x] 2026-04-26: Created `docs/04-phase-4-frontend.md` — phase plan
-- [x] 2026-04-26: Created `docs/05-phase-5-polish-testing.md` — phase plan
-- [x] 2026-04-26: Created `docs/06-phase-6-deployment.md` — phase plan
-- [x] 2026-04-26: Conducted gap analysis — 30 gaps identified
-- [x] 2026-04-26: Created Memory Bank (projectbrief, activeContext, progress, decisionLog)
-- [x] 2026-04-26: Rewrote all 13 agent rules for Satark
-- [x] 2026-04-27: **Phase 1.3** — Stripped template backend (Item model, GeoIP, template routes), rebranded to Satark API
-- [x] 2026-04-27: **Phase 1.4** — Stripped template frontend (NextAuth, layout, dark mode CSS), Satark placeholder + light-mode design system
-- [x] 2026-04-27: **Phase 1.5** — Environment config verified (.env.example already Satark-specific, .env created)
-- [x] 2026-04-27: **Phase 1.6** — Updated dependencies (backend: google-genai, PyJWT, bcrypt, etc. | frontend: SWR)
-- [x] 2026-04-27: **Phase 1.6b** — Cleared template Alembic migrations
-- [x] 2026-04-27: **Phase 1.6c** — Set up pytest.ini + conftest.py + 3 passing root endpoint tests
-- [x] 2026-04-27: **Phase 1.6e** — Created app/core/settings.py (pydantic-settings) + app/core/constants.py
-- [x] 2026-04-27: **Phase 1 misc** — Modernized database.py (DeclarativeBase), cleaned next.config, API client, middleware, seed script
+- [x] Phase 1: Foundation & Scaffolding (Docker, FastAPI, Next.js, Alembic, CI skeleton) — 2026-04-26
+- [x] Phase 2: Backend Core — 2026-04-26
+  - [x] SQLAlchemy models: User, Incident, EvidenceFile, AuditLog
+  - [x] Alembic migration with satark_case_seq SEQUENCE
+  - [x] Pydantic schemas: user, incident, analysis, evidence, dashboard
+  - [x] Auth service (bcrypt + PyJWT)
+  - [x] Security dependencies (get_current_user, get_optional_user, require_role)
+  - [x] Audit logging service
+  - [x] Storage service (local + GCS dual backend)
+  - [x] Incident service (CRUD, case numbers, file uploads)
+  - [x] Dashboard service (stats + 6 chart types)
+  - [x] Routers: auth, incidents, dashboard, admin
+  - [x] Wired into main.py with local uploads mount
+  - [x] Seed script (admin + analyst users)
+  - [x] Test suite: 26 tests passing
+  - [x] Docker aarch64 compatibility (cryptography<44, PyJWT==2.9.0)
 
 ## In Progress
-- [/] Phase 2 — Backend Core (models, auth, CRUD) — NOT STARTED
+- [/] Phase 3: AI Analysis Pipeline
 
-## Planned — Phase 2 (Backend Core)
-- [ ] User, Incident, EvidenceFile, AuditLog models
-- [ ] Alembic migration
-- [ ] JWT auth (register, login, me)
-- [ ] Access control dependencies (require_role)
-- [ ] GCS storage service (+ local fallback)
-- [ ] Incident CRUD with file upload
-- [ ] Dashboard aggregation queries
-- [ ] Admin user management
-- [ ] Test infrastructure (conftest.py, mocked AI)
-- [ ] Tests for all endpoints
-
-## Planned — Phase 3 (AI Pipeline)
-- [ ] AI client singleton with retry logic
-- [ ] Text analyzer
-- [ ] URL analyzer
-- [ ] Image analyzer
-- [ ] Audio analyzer
-- [ ] Video analyzer
-- [ ] Document analyzer
-- [ ] Analysis orchestrator
-- [ ] Polling strategy for async analysis
-
-## Planned — Phase 4 (Frontend)
-- [ ] Design system (Tailwind tokens, globals.css)
-- [ ] Route group architecture (public/protected)
-- [ ] Shared UI components (20+)
-- [ ] AppLayout with responsive navbar
-- [ ] AuthProvider context
-- [ ] Landing page with "Try It Now" demo
-- [ ] Incident submission page
-- [ ] Case detail page
-- [ ] Dashboard with all 6 charts
-- [ ] Workbench case queue
-- [ ] Admin panel
-- [ ] Login/Register pages
-- [ ] Camera/microphone components (HTTPS note)
-
-## Planned — Phase 5 (Polish)
-- [ ] PDF report generation (ReportLab)
-- [ ] Seed data (20 sample incidents)
-- [ ] Sample demo files in public/
-- [ ] Micro-animations and loading states
-- [ ] SEO meta tags
-- [ ] robots.txt
-- [ ] Accessibility audit
-
-## Planned — Phase 6 (Deployment)
-- [ ] Update deployment scripts for Satark
-- [ ] GCP project setup
-- [ ] Cloud SQL setup
-- [ ] GCS bucket setup
-- [ ] Deploy to Cloud Run
-- [ ] Run migrations + seed production DB
-- [ ] End-to-end production verification
-- [ ] Final README update
+## Planned
+- [ ] Phase 3: AI Analysis Pipeline (Gemini structured output, 6 analyzers)
+- [ ] Phase 4: Frontend Implementation (Next.js dashboard, incident views)
+- [ ] Phase 5: Integration & Polish (PDF reports, real-time updates)
+- [ ] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

@@ -1,34 +1,33 @@
 # Active Context
 
 ## Currently Working On
-Phase 1 is COMPLETE. Ready to begin Phase 2 — Backend Core (models, auth, CRUD).
+Phase 2 (Backend Core) — **COMPLETE**. Ready to begin Phase 3 (AI Analysis Pipeline).
 
 ## Current State
-- **Backend:** Clean Satark API with health/root endpoints, error envelope, settings, constants, modern database module. All template code removed. Compiles and tests pass (3/3).
-- **Frontend:** Clean Satark placeholder with light-mode design system (Inter + JetBrains Mono), SWR installed, typed API client. Lint + build pass.
-- **Database:** Alembic configured with empty `versions/`. Ready for Satark models.
-- **Dependencies:** All Satark deps in `requirements.txt` (google-genai, PyJWT, bcrypt, python-multipart, httpx, reportlab, google-cloud-storage, pydantic-settings). Frontend has SWR.
-- **Git:** 20 atomic commits, clean working tree.
+- **Database**: PostgreSQL schema fully applied — 4 tables (users, incidents, evidence_files, audit_logs) + satark_case_seq SEQUENCE.
+- **Backend API**: Fully functional with 4 router groups:
+  - `POST /api/auth/register|login`, `GET /api/auth/me`
+  - `POST/GET/PATCH /api/incidents` (multipart, guest access, filtering, pagination)
+  - `GET /api/dashboard/stats|charts/{type}` (6 chart types)
+  - `GET/PATCH /api/admin/users` (admin-only)
+- **Security**: JWT auth via `get_current_user`, `get_optional_user`, `require_role` dependency chain.
+- **Test Suite**: 26 tests passing (SQLite in-memory, no Docker needed).
+- **Docker**: Backend boots cleanly on aarch64 (pinned cryptography<44, PyJWT==2.9.0).
+- **Seed**: Default admin/analyst users via `scripts/seed_db.py`.
 
 ## Immediate Next Steps
-1. **Phase 2, Step 2.1:** Create `app/models/user.py` — User model with roles
-2. **Phase 2, Step 2.2:** Create `app/models/incident.py` — Incident model with case number
-3. **Phase 2, Step 2.3:** Create `app/models/evidence_file.py` — EvidenceFile model
-4. **Phase 2, Step 2.4:** Create `app/models/audit_log.py` — AuditLog model
-5. Create Alembic migration for all models
-6. Implement JWT auth (register, login, me)
+1. **Phase 3 — AI Analysis Pipeline**: Implement the 6 AI analyzers (text, URL, image, audio, video, document) using Gemini structured output with `ThreatAnalysis` schema.
+2. Create `/api/analyze/*` quick-scan endpoints.
+3. Integrate AI analysis into the incident creation flow (background task on create).
+4. Set `GEMINI_API_KEY` in `.env`.
 
 ## Blockers
-- None for Phase 2 start
-- GCP project ID not confirmed (needed for Phase 6)
-- GEMINI_API_KEY not set in `.env` (needed for Phase 3)
+- `GEMINI_API_KEY` not yet set — required for Phase 3.
+- GCP project ID unconfirmed — needed for Phase 6 deployment.
 
 ## Recent Changes
-- Stripped all template backend code (Item model, GeoIP, template routes)
-- Stripped all template frontend code (NextAuth, template layout, dark mode CSS)
-- Created centralized Settings with pydantic-settings
-- Created constants module (priority mapping, incident statuses, classifications)
-- Modernized database.py (DeclarativeBase, pool_pre_ping)
-- Set up pytest with 3 passing tests
-- Updated all dependencies for Satark
-- Cleared Alembic migrations
+- 18 atomic commits implementing full Phase 2 backend.
+- Pinned `cryptography<44` and `PyJWT==2.9.0` for Docker aarch64 compatibility.
+- Added `email-validator` to requirements.
+- Fixed `require_role` to return callable (not `Depends()`).
+- Made `generate_case_number` SQLite-compatible for tests.

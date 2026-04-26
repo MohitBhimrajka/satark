@@ -240,50 +240,37 @@ Provide your analysis as structured JSON matching the ThreatAnalysis schema.
 
 ## Client Implementation Pattern
 
+### Standard Structured Output (all analyzers)
+
 ```python
-# app/services/ai/client.py
-from google import genai
-from google.genai import types
-from app.core.settings import settings
-import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
-
-_client: genai.Client | None = None
-
-def get_ai_client() -> genai.Client:
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    return _client
-
-async def generate_with_retry(
-    contents: list,
-    response_schema: type,
-    max_retries: int = 3,
-) -> str:
-    client = get_ai_client()
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model=settings.AI_MODEL,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=response_schema,
-                ),
-            )
-            return response.text
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                wait = 2 ** attempt
-                logger.warning(f"Rate limited, retrying in {wait}s")
-                await asyncio.sleep(wait)
-            else:
-                raise
-    raise RuntimeError("AI service failed after max retries")
+# app/services/ai/client.py — generate_structured()
+response_json = await generate_structured(
+    contents=[prompt_text, optional_file_part],
+    response_schema=ThreatAnalysis,  # Pydantic model passed directly
+)
+result = ThreatAnalysis.model_validate_json(response_json)
 ```
+
+Features: singleton client, exponential backoff on 429, `asyncio.Semaphore(5)`.
+
+### Grounded Analysis (URL analyzer — Google Search + URL Context)
+
+```python
+# app/services/ai/client.py — generate_grounded()
+# Gemini 3 supports combining structured output with built-in tools.
+# Uses response_json_schema (dict) instead of response_schema (class).
+response_json = await generate_grounded(
+    contents=[prompt_text],
+    response_schema_class=ThreatAnalysis,  # We extract .model_json_schema()
+    use_google_search=True,   # Real-time threat intel lookup
+    use_url_context=True,     # Visit and analyze the actual URL content
+)
+result = ThreatAnalysis.model_validate_json(response_json)
+```
+
+The URL analyzer uses this to check if domains are known-malicious in real-time
+and inspect what's actually on the page. Falls back to standard structured
+output if grounding fails.
 
 ---
 

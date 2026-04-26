@@ -26,8 +26,10 @@ Phase 2 (Backend Core) — **COMPLETE**. Ready to begin Phase 3 (AI Analysis Pip
 - GCP project ID unconfirmed — needed for Phase 6 deployment.
 
 ## Recent Changes
+- Audit found and fixed: `start_date`/`end_date` query params not wired into IncidentFilter.
 - 18 atomic commits implementing full Phase 2 backend.
 - Pinned `cryptography<44` and `PyJWT==2.9.0` for Docker aarch64 compatibility.
 - Added `email-validator` to requirements.
 - Fixed `require_role` to return callable (not `Depends()`).
 - Made `generate_case_number` SQLite-compatible for tests.
+

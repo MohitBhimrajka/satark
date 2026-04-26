@@ -9,7 +9,7 @@ Before ANY feature work, verify:
 - [ ] Project brief is filled out (Satark-specific, not template)
 - [ ] `docs/satark-use-case.md` exists
 - [ ] `docs/ai-integration.md` exists (prompt templates)
-- [ ] `docs/api-spec.md` exists (endpoint spec)
+- [ ] `docs/api-design.md` exists (endpoint spec)
 
 If any are missing — create them before writing feature code.
 

@@ -19,18 +19,6 @@ const nextConfig: NextConfig = {
     experimental: {
       optimizePackageImports: ['lucide-react'],
     },
-
-    webpack: (config: any, { dev }: { dev: boolean }) => {
-      if (dev) {
-        config.watchOptions = {
-          poll: 1000,
-          aggregateTimeout: 300,
-          ignored: /node_modules/,
-        }
-        config.infrastructureLogging = { level: 'error' }
-      }
-      return config
-    },
   }),
 }
 

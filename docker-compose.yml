@@ -61,8 +61,9 @@ services:
       dockerfile: Dockerfile
       target: deps-dev       # Use dev deps stage for local dev
     volumes:
-      - ./frontend/src:/app/src            # Hot-reload: source
-      - ./frontend/public:/app/public
+      - ./frontend:/app                    # Mount entire frontend for hot-reload (src, public, configs)
+      - /app/node_modules                  # Anonymous volume: preserve container's node_modules
+      - /app/.next                         # Anonymous volume: preserve Next.js build cache
     ports:
       - "3000:3000"
     env_file:

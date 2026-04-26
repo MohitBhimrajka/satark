@@ -1,0 +1,86 @@
+# ==============================================================================
+#  Satark — Docker Compose (Local Development)
+#  Services: postgres, backend (hot-reload), frontend (dev mode)
+#  Usage: make up | make down | make logs-be | make logs-fe
+# ==============================================================================
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-satark_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-satark_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-satark_db}
+    volumes:
+      - satark_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - satark_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-satark_user} -d ${POSTGRES_DB:-satark_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (FastAPI with hot-reload) ───────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime        # Use runtime stage (builder cached separately)
+    volumes:
+      - ./app:/app/app                     # Hot-reload: source code
+      - ./alembic:/app/alembic             # Alembic migrations
+      - ./alembic.ini:/app/alembic.ini
+      - ./scripts:/app/scripts
+      - satark_uploads:/app/uploads        # Local file storage (STORAGE_BACKEND=local)
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-satark_user}:${POSTGRES_PASSWORD:-satark_pass}@postgres:5432/${POSTGRES_DB:-satark_db}
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - LOCAL_UPLOAD_DIR=/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - satark_network
+    restart: unless-stopped
+    # Hot-reload command for development
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Frontend (Next.js dev mode) ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: deps-dev       # Use dev deps stage for local dev
+    volumes:
+      - ./frontend/src:/app/src            # Hot-reload: source
+      - ./frontend/public:/app/public
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    networks:
+      - satark_network
+    restart: unless-stopped
+    command: npm run dev
+
+volumes:
+  satark_postgres_data:
+  satark_uploads:
+
+networks:
+  satark_network:
+    driver: bridge

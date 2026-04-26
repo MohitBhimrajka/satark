@@ -1,28 +1,10 @@
 # app/security.py
 """
-Simplified security module with authentication removed.
-All endpoints are now public - developers can add their own auth system as needed.
+Satark Security — JWT authentication and role-based access control.
+Full implementation in Phase 2 (auth endpoints + JWT validation).
+
+This module will provide:
+  - get_current_user: Extract user from JWT bearer token
+  - get_optional_user: Same but returns None if no token (for guest access)
+  - require_role(*roles): FastAPI dependency that enforces role membership
 """
-import logging
-from fastapi import Request
-
-# --- Logger Setup ---
-log = logging.getLogger(__name__)
-
-
-def get_current_user() -> dict | None:
-    """
-    Simplified user function - returns None (no authentication).
-    Developers can implement their own authentication system here.
-    """
-    return None
-
-
-def verify_access(request: Request):
-    """
-    Simplified access verification - allows all requests.
-    All endpoints are now public. Developers can implement 
-    their own authorization system here.
-    """
-    # Allow all requests - no authentication required
-    return

@@ -1,246 +1,122 @@
 # app/main.py
+"""
+Satark API — AI-Powered Cyber Incident Intelligence Portal
+SIH 2025 | PS ID: 25210
+"""
 import logging
-import os
-from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 
-import geoip2.database
-from fastapi import APIRouter, Depends, FastAPI, Header, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-# Import models and schemas
-from . import models, schemas
-# Import the database dependency
-from .core.database import get_db
-# Import the logging setup function
 from .core.logging_config import setup_logging
-# Import the authentication dependency (simplified - no auth required)
-from .security import get_current_user, verify_access
 
-# --- Logger Initialization ---
-# Get a logger for this module
 log = logging.getLogger(__name__)
 
-# --- Database Integration Completed ---
-# The mock_db has been replaced with a real PostgreSQL database
-# All data is now managed through SQLAlchemy ORM models
-# To use Geofencing, you must download the free GeoLite2-Country.mmdb database from MaxMind's website
-# and place it in the root directory of your project. Run: pip install geoip2
-try:
-    geoip_reader = geoip2.database.Reader("/app/app/GeoLite2-Country.mmdb")
-except FileNotFoundError:
-    geoip_reader = None
-    log.warning("GeoLite2-Country.mmdb not found. Geofencing will default to 'US'.")
 
-
-# --- Pydantic Models for Request Bodies ---
-class PurchaseOrder(BaseModel):
-    amount: int
-
-
-class FileUpload(BaseModel):
-    size: int
-
-
-# --- App & Router Initialization ---
-# Create the FastAPI app instance
-app = FastAPI(title="Web Template API")
-
-# --- ROOT-LEVEL ENDPOINTS ---
-# These are outside the /api prefix for Cloud Run health checks
-
-@app.get("/health", tags=["Health"])
-def root_health():
-    """Root-level health check for Cloud Run and load balancers."""
-    return {"status": "healthy", "service": "template-backend"}
-
-@app.get("/", tags=["Root"])
-def root():
-    """Root endpoint with basic info."""
-    return {
-        "service": "Web Template API",
-        "status": "running",
-        "docs": "/docs",
-        "health": "/health"
-    }
-
-@app.get("/favicon.ico", include_in_schema=False)
-def favicon():
-    """Return a simple favicon response to avoid 404s."""
-    from fastapi import Response
-    return Response(content="", media_type="image/x-icon")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    Actions to take on application startup.
-    """
+# ---------------------------------------------------------------------------
+# Lifespan (replaces deprecated on_event)
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     setup_logging()
-    log.info("Application startup complete.")
+    log.info("Satark API startup complete.")
+    yield
+    log.info("Satark API shutting down.")
 
 
-base_path = os.getenv("BASE_PATH", "")
-# The global 'verify_access' dependency is applied here. It will protect every
-# endpoint on this router according to the rules in this file.
-api_router = APIRouter(prefix=f"{base_path}/api", dependencies=[Depends(verify_access)])
+# ---------------------------------------------------------------------------
+# App Initialization
+# ---------------------------------------------------------------------------
+app = FastAPI(
+    title="Satark API",
+    description="AI-Powered Cyber Incident Intelligence Portal",
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
-# Add the CORS middleware to the main FastAPI app instance.
+# CORS — restrict in production via FRONTEND_URL env var
+import os
+
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to your frontend's domain
+    allow_origins=[frontend_url, "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- EXCEPTION HANDLERS ---
+
+# ---------------------------------------------------------------------------
+# Exception Handlers — Standard Satark Error Envelope
+# ---------------------------------------------------------------------------
 @app.exception_handler(StarletteHTTPException)
-async def not_found_handler(request: Request, exc: StarletteHTTPException):
-    """Custom 404 handler to provide better error messages."""
-    if exc.status_code == 404:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "error": "Not Found",
-                "message": f"The requested path '{request.url.path}' was not found.",
-                "suggestion": "Try /docs for API documentation or /health for health check."
-            }
-        )
-    # Re-raise other HTTP exceptions
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Return errors in the standard Satark error envelope."""
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": "HTTP Exception", "detail": str(exc.detail)}
+        content={
+            "error": {
+                "code": _status_to_code(exc.status_code),
+                "message": str(exc.detail),
+                "details": [],
+            }
+        },
     )
 
-# --- SIMPLE ENDPOINTS (Protected Automatically) ---
-# These endpoints require no special code because their rules are simple
-# and are handled by the global 'verify_access' dependency.
+
+def _status_to_code(status: int) -> str:
+    """Map HTTP status codes to human-readable error codes."""
+    mapping = {
+        400: "BAD_REQUEST",
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "CONFLICT",
+        422: "VALIDATION_ERROR",
+        429: "RATE_LIMITED",
+        500: "INTERNAL_ERROR",
+    }
+    return mapping.get(status, "ERROR")
 
 
-@api_router.get("/health", tags=["Health"])
-def read_health():
-    """Liveness probe. Public via public.map.json."""
-    return {"status": "ok"}
+# ---------------------------------------------------------------------------
+# Root-Level Endpoints (outside /api prefix — for health checks)
+# ---------------------------------------------------------------------------
+@app.get("/health", tags=["Health"])
+def health():
+    """Root-level health check for Cloud Run and load balancers."""
+    return {"status": "healthy", "service": "satark-api"}
 
 
-@api_router.get("/test", tags=["Simple Scenarios"])
-def read_test_data():
-    """Test endpoint - no authentication required."""
-    return {"message": "Hello, World! No authentication required."}
-
-
-@api_router.get("/admin/dashboard", tags=["Simple Scenarios"])
-def get_admin_dashboard():
-    """Admin dashboard - no authentication required in template."""
+@app.get("/", tags=["Root"])
+def root():
+    """Root endpoint with service info."""
     return {
-        "message": "Welcome to the admin dashboard! Authentication can be added as needed."
+        "service": "Satark API",
+        "version": "0.1.0",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/health",
     }
 
 
-# --- NEW DATABASE-DRIVEN ENDPOINTS ---
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Prevent 404 for favicon requests."""
+    from fastapi import Response
+
+    return Response(content="", media_type="image/x-icon")
 
 
-@api_router.post("/items/", response_model=schemas.Item, tags=["Items"])
-def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
-    """
-    Create a new item in the database.
-    This endpoint requires any authenticated user.
-    """
-    db_item = models.Item(name=item.name, description=item.description)
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item
-
-
-@api_router.get("/items/", response_model=list[schemas.Item], tags=["Items"])
-def list_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    List all items from the database.
-    This endpoint requires any authenticated user.
-    """
-    items = db.query(models.Item).offset(skip).limit(limit).all()
-    return items
-
-
-@api_router.get("/items/{item_id}", response_model=schemas.Item, tags=["Items"])
-def get_item(item_id: int, db: Session = Depends(get_db)):
-    """
-    Get a specific item by ID.
-    This endpoint requires any authenticated user.
-    """
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    if item is None:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-
-# --- CONTEXT-AWARE ENDPOINTS (Template Examples) ---
-# These endpoints show where you can add your own authorization logic:
-# 1. Fetch data needed for the context from database
-# 2. Build the context for your authorization rules
-# 3. Implement your own authorization checks as needed
-
-
-# Example: Database-driven ownership check
-@api_router.put("/items/{item_id}", tags=["Context Scenarios"])
-def update_item(
-    item_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """
-    Update an item. No authorization required in template.
-    Developers can add their own authorization logic as needed.
-    """
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    if not item:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=404, detail="Item not found")
-
-    # No authorization check - developers can add their own logic here
-
-    # Update the item
-    item.name = f"Updated: {item.name}"
-    db.commit()
-    return {"status": "Item updated", "item": item}
-
-
-# Additional context-aware examples (simplified for template clarity)
-@api_router.get("/analytics/{region}", tags=["Context Scenarios"])
-def get_analytics(region: str, request: Request):
-    """Analytics endpoint - no authorization required in template."""
-    # No authorization check - developers can add their own logic here
-    return {"region": region, "sales": 12345}
-
-
-@api_router.get("/secure-asset", tags=["Context Scenarios"])
-def get_secure_asset(
-    request: Request,
-    x_forwarded_for: str | None = Header(None),
-):
-    """Secure asset endpoint - no geofencing required in template."""
-    country = "US"  # Default
-    if geoip_reader and x_forwarded_for:
-        try:
-            country = geoip_reader.country(
-                x_forwarded_for.split(",")[0]
-            ).country.iso_code
-        except geoip2.errors.AddressNotFoundError:
-            country = "UNKNOWN"
-    
-    # No authorization check - developers can add geofencing logic here
-    return {"asset": "Public Data", "source_country": country}
-
-
-# For additional context-aware scenarios, see the authorization documentation
-
-# Include the router in the main app
-app.include_router(api_router)
+# ---------------------------------------------------------------------------
+# API Router — all /api/* routes will be included here in Phase 2
+# ---------------------------------------------------------------------------
+# Routers will be added in Phase 2:
+#   from .routers import auth, incidents, analyze, dashboard, admin
+#   app.include_router(auth.router, prefix="/api")
+#   app.include_router(incidents.router, prefix="/api")
+#   ...

@@ -1,4 +1,4 @@
 # app/schemas/__init__.py
-from .item import Item, ItemBase, ItemCreate
+# Satark schemas will be added in Phase 2
 
-__all__ = ["ItemBase", "ItemCreate", "Item"]
+__all__: list[str] = []

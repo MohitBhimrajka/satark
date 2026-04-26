@@ -46,7 +46,7 @@ Before committing, you must remove:
 - **View logs:** `make logs-be` (backend), `make logs-fe` (frontend)
 - **Restart individual:** `docker compose restart backend` or `docker compose restart frontend`
 - **Reset database:** `make reset-db` (clears and re-seeds)
-- Backend hot-reloads in dev (`APP_ENV=development`). Frontend needs `docker compose build frontend` if `FRONTEND_TARGET=prod`.
+- Backend hot-reloads in dev (`APP_ENV=development`). Frontend hot-reloads via `npm run dev` in the `frontend` service.
 
 # 6. Database Migration Discipline
 Any change to SQLAlchemy models (`/app/models/`) MUST be accompanied by an Alembic migration:

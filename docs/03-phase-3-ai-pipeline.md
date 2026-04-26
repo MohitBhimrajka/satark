@@ -254,18 +254,23 @@ feat: add analysis results storage and audit logging
 
 ---
 
-## Step 3.9 — Aikido Security Scan on AI Code
+## Step 3.9 — Security Review of AI Code
+
+> Note: Aikido Security MCP is not active in this project. Perform manual security review.
 
 ### Tasks
-- [ ] Run `mcp_aikido-mcp_aikido_full_scan` on:
-  - `app/services/ai/client.py` (API key handling)
-  - `app/services/storage.py` (file handling)
-  - `app/security.py` (JWT handling)
-- [ ] Fix any SAST vulnerabilities identified
+- [ ] Review `app/services/ai/client.py` — API key never logged, loaded only from `settings.GEMINI_API_KEY`
+- [ ] Review `app/services/storage.py` — MIME type validation, max file size enforced (10MB images, 100MB video), no path traversal
+- [ ] Review `app/security.py` — JWT secret key never hardcoded, bcrypt rounds >= 12, no timing attacks in token comparison
+- [ ] Run Python's built-in security check: `pip install bandit && bandit -r app/`
+- [ ] Verify no API keys appear in git history: `git log -p | grep -i 'api_key\|secret\|password'`
+
+> **MCP to use:** `mcp_google-developer-knowledge_answer_query("Cloud Run security best practices secret manager environment variables")` for patterns on securing secrets in Cloud Run.
 
 ### Commits
 ```
-fix: resolve security findings from Aikido scan on AI and auth code
+fix: harden AI client key loading and add bandit security check
+fix: enforce MIME type validation and file size limits in storage service
 ```
 
 ---

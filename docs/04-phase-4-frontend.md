@@ -62,6 +62,41 @@ feat: add protected layout (sidebar + header) with auth gate
 
 ---
 
+## Step 4.0a — Generate UI Mockups with Stitch MCP (Before Writing CSS)
+
+> Use the `mcp_StitchMCP_*` tools to generate visual mockups BEFORE writing any component code. This gives you pixel-perfect reference images and ensures the design is aligned before implementation.
+
+### Tasks
+- [ ] Create Satark Stitch project:
+  ```
+  mcp_StitchMCP_create_project(title="Satark — AI Cyber Incident Portal")
+  ```
+- [ ] Create design system with Satark tokens:
+  ```
+  mcp_StitchMCP_create_design_system({
+    colorMode: "LIGHT",
+    font: "INTER",
+    roundness: "ROUND_EIGHT",
+    customColor: "#1B3A5C",   # Satark navy
+    designMd: "Government-modern light mode. Premium. Clean. Data-dense."
+  })
+  ```
+- [ ] Generate screens for each key page (use `deviceType: DESKTOP`):
+  - Landing page with "Try It Now" hero
+  - Incident submission form
+  - Case detail with threat score gauge
+  - Analyst dashboard with 6 charts
+  - Workbench case queue table
+- [ ] Call `mcp_StitchMCP_get_screen` on each to get screenshot URLs
+- [ ] Use screenshots as visual reference while building Next.js components
+
+### Commits
+```
+docs: add Stitch UI mockup screenshots to docs/design/
+```
+
+---
+
 ## Step 4.1 — Design System & Tokens
 
 ### Tasks

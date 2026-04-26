@@ -52,7 +52,7 @@ docs: add active context and progress tracking
 - [ ] Remove `Item` schema (`app/schemas/`)
 - [ ] Remove template routes from `main.py` (items, analytics, secure-asset)
 - [ ] Remove GeoIP dependency and code from `main.py`
-- [ ] Remove `make_ingest.py` (template utility)
+- [x] Remove `make_ingest.py` (already deleted — was a template utility, not part of Satark)
 - [ ] Update `main.py`: change app title to "Satark API", clean up imports
 - [ ] Update health endpoint to return `{"service": "satark-api"}`
 - [ ] Verify `python -m py_compile app/main.py` passes
@@ -201,29 +201,21 @@ test: add pytest configuration and test infrastructure
 
 ## Step 1.6d — Makefile Deploy Targets
 
-### Tasks
-- [ ] Add to `Makefile`:
-```makefile
-# Deployment targets (wraps deployment/gcloud-deploy.sh)
-deploy:
-	@bash deployment/gcloud-deploy.sh
+> ✅ **Already done in initial setup** — `Makefile` already contains all deploy targets.
 
-deploy-backend:
-	@bash deployment/gcloud-deploy.sh --backend-only
-
-deploy-frontend:
-	@bash deployment/gcloud-deploy.sh --frontend-only
-
-deploy-status:
-	@gcloud run services list --region=$(CLOUD_RUN_REGION)
-
-seed-demo:
-	@docker compose exec backend python scripts/seed_demo_data.py
+For reference, the deploy targets use `deployment/satark-deploy.sh`:
+```bash
+make deploy           # Full deploy → runs deployment/satark-deploy.sh
+make deploy-backend   # Backend only
+make deploy-frontend  # Frontend only
+make deploy-status    # Lists Cloud Run services via gcloud
+make setup-secrets    # Interactive: creates Secret Manager secrets
+make seed-demo        # Seeds 20 demo incidents
 ```
 
 ### Commits
 ```
-chore: add deploy and seed-demo Makefile targets
+# Already committed as: chore: add Satark Makefile with dev, db, quality, and deployment targets
 ```
 
 ---

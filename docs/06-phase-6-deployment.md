@@ -3,6 +3,21 @@
 > Goal: Deploy Satark to production — both services on Cloud Run, Cloud SQL PostgreSQL, GCS for evidence storage.
 > All infrastructure is managed via `make` commands and `deployment/satark-deploy.sh`.
 
+## MCP Tools for This Phase
+
+| Task | MCP Tool |
+|------|----------|
+| Verify GCP project exists | `mcp_cloudrun_list_projects()` |
+| Create GCP project if needed | `mcp_cloudrun_create_project(projectId="satark-sih-2025")` |
+| **Deploy backend to Cloud Run** | `mcp_cloudrun_deploy_local_folder(project=..., folderPath="...", service="satark-backend", region="asia-south1")` |
+| **Deploy frontend to Cloud Run** | `mcp_cloudrun_deploy_local_folder(project=..., folderPath=".../frontend", service="satark-frontend", region="asia-south1")` |
+| Get service URL after deploy | `mcp_cloudrun_get_service(project=..., service="satark-backend", region="asia-south1")` |
+| Check Cloud Run logs | `mcp_cloudrun_get_service_log(project=..., service="satark-backend", region="asia-south1")` |
+| Look up Cloud Run config | `mcp_google-developer-knowledge_search_documents("cloud run secret manager environment variables python")` |
+| Cloud SQL connection patterns | `mcp_google-developer-knowledge_answer_query("How to connect FastAPI to Cloud SQL PostgreSQL on Cloud Run?")` |
+
+> **Preferred deployment flow:** `mcp_cloudrun_deploy_local_folder` is faster than building Docker images manually. It handles Artifact Registry automatically. Use it for quick deploys; use `make deploy` (which runs `satark-deploy.sh`) for full production CI/CD.
+
 ---
 
 ## Overview

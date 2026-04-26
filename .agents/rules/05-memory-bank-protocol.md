@@ -119,13 +119,13 @@ Create a dedicated `docs/{use-case-name}.md` file documenting:
 ### Step 4: Update Agent Rules (if needed)
 If the use case introduces domain-specific conventions (e.g., specific naming patterns, unique validation rules, new service integrations), update the relevant rule files in `.agents/rules/`.
 
-# 6. Key Project Documentation
+# 6. Key Project Documentation (Satark-Specific)
 Before building features, always check whether these docs have relevant context:
-- `docs/brand-identity.md` — Full Ampersand design token map, color palette, logo assets.
-- `docs/design-system-template.md` — UI component patterns, spacing, layout templates.
-- `docs/cc-playbook.md` — Command Center philosophy, AI-First design, 3-pillar architecture.
-- `docs/Audit System Guide.md` — Audit logging patterns, middleware config, API endpoints.
-- `docs/Keycloak Developer Guide.md` — Authorization engine, RBAC/ABAC rules, policy language.
+- `docs/00-project-overview.md` — What Satark is, SIH problem statement, feature scope.
+- `docs/satark-use-case.md` — Entity lifecycle, incident state machine, polling pattern.
+- `docs/ai-integration.md` — All 6 AI analyzer prompt templates and structured output schema.
+- `docs/memory-bank/decisionLog.md` — Why major architectural decisions were made.
+- `docs/01-phase-1-foundation.md` through `docs/06-phase-6-deployment.md` — Implementation plans.
 
 # 7. The "Boy Scout" Rule (Self-Evolving Codebase)
 Whenever you touch existing code, look for opportunities to improve it safely:

@@ -30,7 +30,7 @@ description: Reference when making decisions about backend/frontend technology c
 - **Production:** Google Cloud Run (both frontend and backend as separate services)
 - **Database (prod):** Cloud SQL (PostgreSQL 15)
 - **Storage (prod):** Google Cloud Storage bucket
-- **CI/CD:** `deployment/cloudbuild.yaml` for GitHub trigger + `deployment/gcloud-deploy.sh` for manual deploy
+- **CI/CD:** `deployment/cloudbuild.yaml` for Cloud Build GitHub trigger + `deployment/satark-deploy.sh` for manual deploy (use `make deploy`)
 
 # 4. Backend Folder Responsibilities
 - `/app/main.py`: FastAPI app, router mounting, CORS, exception handlers.

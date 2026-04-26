@@ -51,6 +51,7 @@ async def analyze_incident(incident_id: str) -> None:
     from app.core.database import SessionLocal
 
     db = SessionLocal()
+    incident = None
     try:
         incident = (
             db.query(Incident).filter(Incident.id == incident_id).first()

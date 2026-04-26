@@ -175,9 +175,9 @@ async def test_text_analyzer_safe(mock_gen):
 # ── URL analyzer tests (mocked) ────────────────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("app.services.ai.analyzers.url.generate_structured")
+@patch("app.services.ai.analyzers.url.generate_grounded")
 async def test_url_analyzer_suspicious_tld(mock_gen):
-    """URL analyzer should flag .tk domain as phishing."""
+    """URL analyzer should flag .tk domain as phishing using grounded analysis."""
     mock_gen.return_value = MOCK_URL_PHISHING_JSON
 
     from app.services.ai.analyzers import url as url_analyzer
@@ -187,6 +187,29 @@ async def test_url_analyzer_suspicious_tld(mock_gen):
     )
     assert result.classification == "phishing"
     assert result.threat_score == 92
+    # Verify grounded was called with google_search=True, url_context=True
+    mock_gen.assert_called_once()
+    call_kwargs = mock_gen.call_args
+    assert call_kwargs.kwargs.get("use_google_search") is True
+    assert call_kwargs.kwargs.get("use_url_context") is True
+
+
+@pytest.mark.asyncio
+@patch("app.services.ai.analyzers.url.generate_structured")
+@patch("app.services.ai.analyzers.url.generate_grounded")
+async def test_url_analyzer_fallback(mock_grounded, mock_structured):
+    """URL analyzer should fall back to non-grounded if grounding fails."""
+    mock_grounded.side_effect = RuntimeError("Grounding unavailable")
+    mock_structured.return_value = MOCK_URL_PHISHING_JSON
+
+    from app.services.ai.analyzers import url as url_analyzer
+
+    result = await url_analyzer.analyze(
+        "http://sbi-banking-secure.tk/login?ref=army"
+    )
+    assert result.classification == "phishing"
+    mock_grounded.assert_called_once()
+    mock_structured.assert_called_once()
 
 
 # ── Quick-scan endpoint tests ──────────────────────────────────────────────
@@ -220,3 +243,4 @@ def test_quick_scan_url_endpoint(mock_analyze, client):
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert data["analysis"]["classification"] == "phishing"
+

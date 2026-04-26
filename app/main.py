@@ -113,10 +113,26 @@ def favicon():
 
 
 # ---------------------------------------------------------------------------
-# API Router — all /api/* routes will be included here in Phase 2
+# API Routers
 # ---------------------------------------------------------------------------
-# Routers will be added in Phase 2:
-#   from .routers import auth, incidents, analyze, dashboard, admin
-#   app.include_router(auth.router, prefix="/api")
-#   app.include_router(incidents.router, prefix="/api")
-#   ...
+from .routers import admin, auth, dashboard, incidents
+
+app.include_router(auth.router, prefix="/api")
+app.include_router(incidents.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+
+# ── Local file serving for dev (uploads) ─────────────────────────────────
+from .core.settings import settings
+
+if settings.STORAGE_BACKEND == "local":
+    import os
+
+    from fastapi.staticfiles import StaticFiles
+
+    os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=settings.LOCAL_UPLOAD_DIR),
+        name="uploads",
+    )

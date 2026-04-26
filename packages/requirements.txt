@@ -15,8 +15,9 @@ alembic
 google-genai
 
 # Auth — JWT + password hashing
-PyJWT
+PyJWT==2.9.0
 bcrypt
+cryptography<44  # Pin: >=44 triggers SIGILL on aarch64 Docker (rust _openssl binding)
 
 # File uploads (REQUIRED for FastAPI multipart)
 python-multipart
@@ -32,6 +33,9 @@ google-cloud-storage
 
 # Settings management
 pydantic-settings
+
+# Email validation (required for Pydantic EmailStr)
+email-validator
 
 # Logging
 python-json-logger

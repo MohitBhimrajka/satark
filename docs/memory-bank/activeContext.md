@@ -1,35 +1,36 @@
 # Active Context
 
 ## Currently Working On
-Phase 2 (Backend Core) — **COMPLETE**. Ready to begin Phase 3 (AI Analysis Pipeline).
+Phase 3 (AI Analysis Pipeline) — **COMPLETE**. Ready to begin Phase 4 (Frontend Implementation).
 
 ## Current State
-- **Database**: PostgreSQL schema fully applied — 4 tables (users, incidents, evidence_files, audit_logs) + satark_case_seq SEQUENCE.
-- **Backend API**: Fully functional with 4 router groups:
-  - `POST /api/auth/register|login`, `GET /api/auth/me`
-  - `POST/GET/PATCH /api/incidents` (multipart, guest access, filtering, pagination)
-  - `GET /api/dashboard/stats|charts/{type}` (6 chart types)
-  - `GET/PATCH /api/admin/users` (admin-only)
-- **Security**: JWT auth via `get_current_user`, `get_optional_user`, `require_role` dependency chain.
-- **Test Suite**: 26 tests passing (SQLite in-memory, no Docker needed).
-- **Docker**: Backend boots cleanly on aarch64 (pinned cryptography<44, PyJWT==2.9.0).
-- **Seed**: Default admin/analyst users via `scripts/seed_db.py`.
+- **Database**: Unchanged from Phase 2 — 4 tables (users, incidents, evidence_files, audit_logs) + satark_case_seq.
+- **AI Pipeline**: Fully implemented in `app/services/ai/`:
+  - `client.py` — Gemini singleton with retry (exponential backoff on 429) + `asyncio.Semaphore(5)` concurrency control
+  - `schemas.py` — Canonical `ThreatAnalysis` Pydantic model (re-exported from `app/schemas/analysis.py`)
+  - `prompts.py` — `SYSTEM_PROMPT_BASE` + 6 modality-specific prompt templates
+  - `orchestrator.py` — Routes incidents to correct analyzer, updates DB, handles errors → `analysis_failed` status
+  - `analyzers/` — 6 modules: text, URL, image, audio, video, document
+- **Background Tasks**: Incident creation now triggers `analyze_incident` via `BackgroundTasks`
+- **Quick Scan Endpoints**: `/api/analyze/text`, `/api/analyze/url`, `/api/analyze/file` (no auth, no DB write)
+- **Test Suite**: 41 tests passing (26 Phase 2 + 15 Phase 3, all mocked)
+- **Docker**: Not yet re-verified with `make up` (services are currently down)
 
 ## Immediate Next Steps
-1. **Phase 3 — AI Analysis Pipeline**: Implement the 6 AI analyzers (text, URL, image, audio, video, document) using Gemini structured output with `ThreatAnalysis` schema.
-2. Create `/api/analyze/*` quick-scan endpoints.
-3. Integrate AI analysis into the incident creation flow (background task on create).
-4. Set `GEMINI_API_KEY` in `.env`.
+1. **Phase 4 — Frontend**: Build Next.js pages with route groups, design system, and all views
+2. Key pages: landing, submit, case/:id, login, register (public) + dashboard, workbench, admin (protected)
+3. Implement `usePolling.ts` hook (poll `GET /api/incidents/:id` every 2s until `status != "analyzing"`)
+4. Build "Try It Now" section with pre-loaded demo samples (from `demo-samples.json`)
 
 ## Blockers
-- `GEMINI_API_KEY` not yet set — required for Phase 3.
-- GCP project ID unconfirmed — needed for Phase 6 deployment.
+- GCP project ID unconfirmed — needed for Phase 6 deployment
+- Camera/mic require HTTPS — only testable on deployed URL
 
 ## Recent Changes
-- Audit found and fixed: `start_date`/`end_date` query params not wired into IncidentFilter.
-- 18 atomic commits implementing full Phase 2 backend.
-- Pinned `cryptography<44` and `PyJWT==2.9.0` for Docker aarch64 compatibility.
-- Added `email-validator` to requirements.
-- Fixed `require_role` to return callable (not `Depends()`).
-- Made `generate_case_number` SQLite-compatible for tests.
-
+- Created `app/services/ai/` package with 6 analyzers, client, prompts, schemas, orchestrator
+- Added `/api/analyze/text|url|file` quick-scan endpoints (no auth, no DB)
+- Wired `BackgroundTasks.add_task(analyze_incident, ...)` into incident creation router
+- Added `analysis_failed` to `IncidentStatus.ALL`
+- Added `AI_CONCURRENCY_LIMIT` to settings
+- Added `mock_ai_background_task` autouse fixture in conftest (prevents tests from hitting PostgreSQL)
+- 9 atomic commits for Phase 3

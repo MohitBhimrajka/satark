@@ -17,12 +17,24 @@
   - [x] Seed script (admin + analyst users)
   - [x] Test suite: 26 tests passing
   - [x] Docker aarch64 compatibility (cryptography<44, PyJWT==2.9.0)
+- [x] Phase 3: AI Analysis Pipeline — 2026-04-27
+  - [x] AI service package scaffold (app/services/ai/)
+  - [x] ThreatAnalysis schema in ai/schemas.py (re-exported from app/schemas/analysis.py)
+  - [x] 6 prompt templates in ai/prompts.py (text, URL, image, audio, video, document)
+  - [x] Gemini client singleton with retry + asyncio.Semaphore(5) concurrency control
+  - [x] 6 modality analyzers (text, URL, image, audio, video, document)
+  - [x] AI orchestrator — routes to analyzer, updates incident DB, audit logging
+  - [x] BackgroundTasks wired into incident creation router
+  - [x] Quick-scan endpoints: /api/analyze/text, /url, /file (no auth, no DB)
+  - [x] analysis_failed status added to IncidentStatus
+  - [x] AI_CONCURRENCY_LIMIT added to settings
+  - [x] 15 AI pipeline tests (all mocked, no real API calls)
+  - [x] Full test suite: 41 tests passing (26 Phase 2 + 15 Phase 3)
 
 ## In Progress
-- [/] Phase 3: AI Analysis Pipeline
+- [/] Phase 4: Frontend Implementation
 
 ## Planned
-- [ ] Phase 3: AI Analysis Pipeline (Gemini structured output, 6 analyzers)
 - [ ] Phase 4: Frontend Implementation (Next.js dashboard, incident views)
 - [ ] Phase 5: Integration & Polish (PDF reports, real-time updates)
 - [ ] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

@@ -1,16 +1,47 @@
 # packages/requirements.txt
-# Core Application Dependencies
-fastapi
-uvicorn
-gunicorn
-gitingest
-geoip2
+# ── Satark API Dependencies ──────────────────────────────────────────────────
 
-# --- Development & Code Quality Tools ---
+# Core Framework
+fastapi
+uvicorn[standard]
+gunicorn
+
+# Database
+sqlalchemy[asyncio]
+psycopg2-binary
+alembic
+
+# AI — Gemini 3 SDK
+google-genai
+
+# Auth — JWT + password hashing
+PyJWT
+bcrypt
+
+# File uploads (REQUIRED for FastAPI multipart)
+python-multipart
+
+# HTTP client (URL analysis + tests)
+httpx
+
+# PDF report generation
+reportlab
+
+# Cloud Storage
+google-cloud-storage
+
+# Settings management
+pydantic-settings
+
+# Logging
+python-json-logger
+
+# ── Development & Code Quality ───────────────────────────────────────────────
 black
 isort
 flake8
-python-json-logger
-sqlalchemy
-psycopg2-binary
-alembic
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest
+pytest-asyncio
+aiosqlite

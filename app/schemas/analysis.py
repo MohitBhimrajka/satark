@@ -1,27 +1,13 @@
 # app/schemas/analysis.py
-"""Satark — AI analysis structured output schemas."""
+"""Satark — AI analysis schemas (re-exports + request/response types)."""
 from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
-class ThreatAnalysis(BaseModel):
-    """
-    Structured output schema for AI threat analysis.
-    The AI model returns JSON matching this shape via structured output.
-    Used with model_validate_json() — never json.loads().
-    """
-
-    classification: Literal[
-        "phishing", "malware", "fraud", "espionage", "opsec_risk", "safe"
-    ]
-    threat_score: int = Field(ge=0, le=100)
-    confidence: float = Field(ge=0.0, le=1.0)
-    summary: str
-    indicators: list[str]
-    mitigation_steps: list[str]
-    risk_factors: list[str]
+# Re-export ThreatAnalysis from its canonical location in the AI service package.
+# This preserves backward compatibility for any code importing from here.
+from app.services.ai.schemas import ThreatAnalysis  # noqa: F401
 
 
 class QuickScanRequest(BaseModel):

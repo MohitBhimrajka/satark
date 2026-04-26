@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # ── AI ────────────────────────────────────────────────────────────────────
     GEMINI_API_KEY: str = ""
     AI_MODEL: str = "gemini-3-flash-preview"
+    AI_CONCURRENCY_LIMIT: int = 5  # Max parallel AI calls (free tier guard)
 
     # ── Storage ──────────────────────────────────────────────────────────────
     STORAGE_BACKEND: str = "local"  # "local" or "gcs"

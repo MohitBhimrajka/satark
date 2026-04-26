@@ -28,12 +28,16 @@ class IncidentStatus:
     SUBMITTED = "submitted"
     ANALYZING = "analyzing"
     ANALYZED = "analyzed"
+    ANALYSIS_FAILED = "analysis_failed"
     INVESTIGATING = "investigating"
     ESCALATED = "escalated"
     RESOLVED = "resolved"
     CLOSED = "closed"
 
-    ALL = [SUBMITTED, ANALYZING, ANALYZED, INVESTIGATING, ESCALATED, RESOLVED, CLOSED]
+    ALL = [
+        SUBMITTED, ANALYZING, ANALYZED, ANALYSIS_FAILED,
+        INVESTIGATING, ESCALATED, RESOLVED, CLOSED,
+    ]
 
 
 # ── Classification Labels ───────────────────────────────────────────────────

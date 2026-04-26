@@ -1,13 +1,11 @@
 // frontend/src/middleware.ts
 /**
- * Middleware simplified - no authentication required.
- * Add your own middleware logic as needed.
+ * Satark Next.js Middleware.
+ * Route protection will be added in Phase 4 for (protected) route group.
  */
 import { NextResponse } from 'next/server'
 
 export function middleware() {
-  // No authentication or access control - all requests are allowed
-  // Add your own middleware logic here as needed
   return NextResponse.next()
 }
 

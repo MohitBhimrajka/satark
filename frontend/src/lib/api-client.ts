@@ -1,33 +1,52 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
-
+// frontend/src/lib/api-client.ts
 /**
- * Simplified API client without authentication.
- * @param endpoint The API endpoint to call, e.g., '/api/test' or '/api/admin/dashboard'.
- *                 The endpoint should include the '/api' prefix.
- * @param options Standard fetch options (method, body, etc.).
+ * Satark API Client — fetch wrapper with auth headers and error handling.
+ * JWT token management will be added in Phase 4 (useAuth hook).
  */
-async function apiClient(endpoint: string, options: RequestInit = {}) {
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+interface ApiError {
+  error: {
+    code: string
+    message: string
+    details: unknown[]
+  }
+}
+
+async function apiClient<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
   const headers = new Headers(options.headers || {})
-  
-  // Set default headers
-  headers.set('Content-Type', 'application/json')
 
-  // Construct the full URL: http://localhost:8001/api/test
-  const fullUrl = `${API_URL}${BASE_PATH}${endpoint}`
-
-  const response = await fetch(fullUrl, { ...options, headers })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({
-      detail: response.statusText,
-    }))
-    throw new Error(errorData.detail || 'An API error occurred.')
+  // Default to JSON content type unless multipart (file upload)
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json')
   }
 
-  // Handle responses with no content
+  // JWT token will be added here in Phase 4
+  // const token = getToken()
+  // if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  })
+
+  if (!response.ok) {
+    const errorData: ApiError = await response.json().catch(() => ({
+      error: {
+        code: 'UNKNOWN',
+        message: response.statusText || 'An API error occurred.',
+        details: [],
+      },
+    }))
+    throw new Error(errorData.error?.message || 'An API error occurred.')
+  }
+
   if (response.status === 204) {
-    return null
+    return null as T
   }
 
   return response.json()

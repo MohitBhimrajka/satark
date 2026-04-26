@@ -1,22 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Required for Docker production build (multi-stage with next start)
+  // Required for Docker production build (Cloud Run)
   output: 'standalone',
-
-  // --- BASE_PATH ADDITION START ---
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  // --- BASE_PATH ADDITION END ---
 
   env: {
     NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001',
-    INTERNAL_API_URL: process.env.INTERNAL_API_URL || 'http://backend:8000',
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
   },
-  serverExternalPackages: [],
-
-  // Enable source maps for production debugging
-  productionBrowserSourceMaps: true,
 
   // Ensure TypeScript errors fail the build
   typescript: {
@@ -26,10 +17,9 @@ const nextConfig: NextConfig = {
   // Development optimizations
   ...(process.env.NODE_ENV === 'development' && {
     experimental: {
-      optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+      optimizePackageImports: ['lucide-react'],
     },
 
-    // Optimize bundling for development
     webpack: (config: any, { dev }: { dev: boolean }) => {
       if (dev) {
         config.watchOptions = {

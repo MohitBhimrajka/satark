@@ -4,91 +4,68 @@
 
 @layer base {
   :root {
-    /* Brand Colors - Dark Mode */
-    --background: 0 0% 0%; /* #000000 - Black background */
-    --foreground: 0 0% 100%; /* #ffffff - White text */
+    /* ── Satark Design System — Light Mode Only ─────────────────────────── */
+    /* Government-modern, premium aesthetic                                   */
 
-    --card: 228 100% 11%; /* #000b37 - Navy Blue cards */
-    --card-foreground: 0 0% 100%; /* #ffffff - White text on cards */
+    --background: 0 0% 98%;       /* #fafafa — off-white */
+    --foreground: 222 47% 11%;    /* #1e293b — slate-900 */
 
-    --popover: 228 100% 11%; /* #000b37 - Navy Blue */
-    --popover-foreground: 0 0% 100%; /* #ffffff - White text */
+    --card: 0 0% 100%;            /* #ffffff */
+    --card-foreground: 222 47% 11%;
 
-    --primary: 228 100% 11%; /* #000b37 - Navy Blue primary */
-    --primary-foreground: 0 0% 100%; /* #ffffff - White text on primary */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --secondary: 0 0% 28%; /* #474747 - Dark Gray */
-    --secondary-foreground: 0 0% 100%; /* #ffffff - White text on secondary */
+    --primary: 221 83% 53%;       /* #3b82f6 — blue-500 */
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 28%; /* #474747 - Dark Gray for muted areas */
-    --muted-foreground: 0 0% 78%; /* #c7c7c7 - Light Gray text */
+    --secondary: 210 40% 96%;     /* #f1f5f9 — slate-100 */
+    --secondary-foreground: 222 47% 11%;
 
-    --accent: 80 89% 40%; /* #85c20b - Lime Green accent */
-    --accent-foreground: 0 0% 0%; /* #000000 - Black text on accent */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;  /* #64748b — slate-500 */
 
-    --destructive: 14 100% 67%; /* #ff9a5a - Coral Orange for destructive actions */
-    --destructive-foreground: 0 0% 0%; /* #000000 - Black text on destructive */
+    --accent: 142 76% 36%;        /* #16a34a — green-600 (safe/success) */
+    --accent-foreground: 0 0% 100%;
 
-    --border: 0 0% 28%; /* #474747 - Dark Gray borders */
-    --input: 0 0% 28%; /* #474747 - Dark Gray inputs */
-    --ring: 80 89% 40%; /* #85c20b - Lime Green focus ring */
+    --destructive: 0 84% 60%;     /* #ef4444 — red-500 */
+    --destructive-foreground: 0 0% 100%;
 
-    /* Additional Brand Colors Available */
-    --soft-blue: 236 75% 72%; /* #8289ec */
-    --light-lime: 80 95% 66%; /* #c3fb54 */
-    --soft-purple: 261 100% 75%; /* #b181ff */
-    --bright-cyan: 194 65% 54%; /* #31b8e1 */
-    --light-pink: 349 100% 79%; /* #ff94a8 */
+    --warning: 38 92% 50%;        /* #f59e0b — amber-500 */
+    --warning-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
-  }
+    --border: 214 32% 91%;        /* #e2e8f0 — slate-200 */
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;          /* matches primary */
 
-  .light {
-    /* Brand Colors - Light Mode */
-    --background: 0 0% 100%; /* #ffffff - White background */
-    --foreground: 0 0% 0%; /* #000000 - Black text */
+    /* Satark-specific tokens */
+    --threat-critical: 0 84% 60%;    /* red-500 */
+    --threat-high: 25 95% 53%;       /* orange-500 */
+    --threat-medium: 38 92% 50%;     /* amber-500 */
+    --threat-low: 142 76% 36%;       /* green-600 */
+    --threat-safe: 142 76% 36%;
 
-    --card: 0 0% 100%; /* #ffffff - White cards */
-    --card-foreground: 0 0% 0%; /* #000000 - Black text on cards */
-
-    --popover: 0 0% 100%; /* #ffffff - White */
-    --popover-foreground: 0 0% 0%; /* #000000 - Black text */
-
-    --primary: 228 100% 11%; /* #000b37 - Navy Blue primary */
-    --primary-foreground: 0 0% 100%; /* #ffffff - White text on primary */
-
-    --secondary: 0 0% 96%; /* Light background */
-    --secondary-foreground: 0 0% 28%; /* #474747 - Dark Gray text */
-
-    --muted: 0 0% 96%; /* Light muted background */
-    --muted-foreground: 0 0% 28%; /* #474747 - Dark Gray text */
-
-    --accent: 80 89% 40%; /* #85c20b - Lime Green accent */
-    --accent-foreground: 0 0% 100%; /* #ffffff - White text on accent */
-
-    --destructive: 14 100% 67%; /* #ff9a5a - Coral Orange */
-    --destructive-foreground: 0 0% 100%; /* #ffffff - White text on destructive */
-
-    --border: 0 0% 78%; /* #c7c7c7 - Light Gray borders */
-    --input: 0 0% 78%; /* #c7c7c7 - Light Gray inputs */
-    --ring: 80 89% 40%; /* #85c20b - Lime Green focus ring */
+    --radius: 0.625rem;  /* 10px — slightly rounded, modern */
   }
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer utilities {
-  /* Custom shadow utilities */
   .shadow-soft {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
   }
-  
+
   .shadow-medium {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
   }
 }

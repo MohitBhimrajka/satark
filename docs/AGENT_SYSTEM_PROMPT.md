@@ -234,8 +234,3 @@ Before ending the session:
 5. Update `docs/memory-bank/progress.md` — mark completed tasks with [x] and date
 6. If a major decision was made, log it in `docs/memory-bank/decisionLog.md`
 ```
-
----
-
-> **Usage:** Paste everything between the triple-backtick blocks as your system prompt when starting a new session.
-> The agent will read all rules, understand phase status from git log, and continue from where you left off.

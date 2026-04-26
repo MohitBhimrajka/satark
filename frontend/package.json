@@ -1,6 +1,6 @@
 {
-  "name": "fullstack-web-template",
-  "version": "2.0.0",
+  "name": "satark",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3000",

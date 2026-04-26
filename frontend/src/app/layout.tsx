@@ -1,18 +1,22 @@
 import './globals.css'
-import { Providers } from './providers'
-import { Header } from '@/components/layout/Header'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Inter as FontSans } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
 export const metadata = {
-  title: 'Web Template',
-  description: 'Full-Stack Web Application Template',
+  title: 'Satark — AI-Powered Cyber Incident Intelligence',
+  description:
+    'Report and analyze cyber threats with AI. Satark provides instant threat classification, IOC extraction, and mitigation playbooks for defence personnel.',
+  keywords: ['cybersecurity', 'incident response', 'threat intelligence', 'AI'],
 }
 
-const fontSans = FontSans({
+const fontSans = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
+})
+
+const fontMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
 })
 
 export default function RootLayout({
@@ -21,24 +25,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang='en' className='light' suppressHydrationWarning>
+    <html lang='en' suppressHydrationWarning>
       <body
         className={cn(
           'bg-background min-h-screen font-sans antialiased',
-          fontSans.variable
+          fontSans.variable,
+          fontMono.variable
         )}
       >
-        <Providers>
-          <div className='grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr]'>
-            <Sidebar />
-            <div className='flex flex-col'>
-              <Header />
-              <main className='flex flex-1 flex-col gap-4 bg-gray-50 p-4 lg:gap-6 lg:p-8'>
-                {children}
-              </main>
-            </div>
-          </div>
-        </Providers>
+        {children}
       </body>
     </html>
   )

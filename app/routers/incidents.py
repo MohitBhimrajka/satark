@@ -83,6 +83,8 @@ def list_incidents(
         status=status_filter,
         priority=priority,
         classification=classification,
+        start_date=start_date,
+        end_date=end_date,
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,

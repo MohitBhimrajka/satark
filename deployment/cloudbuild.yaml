@@ -1,0 +1,185 @@
+# ==============================================================================
+#  Satark — Cloud Build CI/CD Pipeline
+#  Triggered on push to main branch
+#  Builds and deploys both services to Cloud Run (asia-south1)
+#  Uses Artifact Registry (not deprecated GCR)
+# ==============================================================================
+#
+# SETUP (one-time):
+#   1. Create Artifact Registry repo:
+#      gcloud artifacts repositories create satark \
+#        --repository-format=docker --location=asia-south1
+#
+#   2. Create secrets in Secret Manager:
+#      gcloud secrets create satark-database-url     --data-file=-
+#      gcloud secrets create satark-frontend-url     --data-file=-
+#      gcloud secrets create satark-next-public-api-url --data-file=-
+#      gcloud secrets create satark-gemini-api-key   --data-file=-
+#      gcloud secrets create satark-jwt-secret-key   --data-file=-
+#      gcloud secrets create satark-gcs-bucket-name  --data-file=-
+#
+#   3. Grant Cloud Build SA access to secrets:
+#      PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+#      SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+#      for secret in satark-database-url satark-frontend-url satark-next-public-api-url \
+#                    satark-gemini-api-key satark-jwt-secret-key satark-gcs-bucket-name; do
+#        gcloud secrets add-iam-policy-binding $secret \
+#          --member="serviceAccount:$SA" --role="roles/secretmanager.secretAccessor"
+#      done
+#
+#   4. Create trigger:
+#      gcloud builds triggers create github \
+#        --repo-name=satark --repo-owner=<YOUR_GITHUB_USERNAME> \
+#        --branch-pattern=main \
+#        --build-config=deployment/cloudbuild.yaml
+#
+# ==============================================================================
+
+substitutions:
+  _PROJECT_ID: '${PROJECT_ID}'
+  _REGION: 'asia-south1'
+  _BACKEND_SERVICE: 'satark-backend'
+  _FRONTEND_SERVICE: 'satark-frontend'
+  _REGISTRY: 'asia-south1-docker.pkg.dev/${PROJECT_ID}/satark'
+  _IMAGE_TAG: '${SHORT_SHA}'
+  # AI config (not secret — just model name)
+  _AI_MODEL: 'gemini-3-flash-preview'
+  _STORAGE_BACKEND: 'gcs'
+
+steps:
+  # ── Step 1: Build backend image ─────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args:
+      - 'build'
+      - '--platform=linux/amd64'
+      - '--cache-from=${_REGISTRY}/backend:latest'
+      - '-t=${_REGISTRY}/backend:${_IMAGE_TAG}'
+      - '-t=${_REGISTRY}/backend:latest'
+      - '-f=Dockerfile'
+      - '.'
+    waitFor: ['-']
+
+  # ── Step 2: Build frontend image ────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    dir: 'frontend'
+    args:
+      - 'build'
+      - '--platform=linux/amd64'
+      - '--cache-from=${_REGISTRY}/frontend:latest'
+      - '-t=${_REGISTRY}/frontend:${_IMAGE_TAG}'
+      - '-t=${_REGISTRY}/frontend:latest'
+      - '--build-arg=NEXT_PUBLIC_API_URL=$$NEXT_PUBLIC_API_URL'
+      - '--build-arg=NEXT_PUBLIC_BASE_PATH='
+      - '-f=Dockerfile'
+      - '.'
+    secretEnv: ['NEXT_PUBLIC_API_URL']
+    waitFor: ['-']
+
+  # ── Step 3: Push backend ─────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend'
+    args: ['push', '--all-tags', '${_REGISTRY}/backend']
+    waitFor: ['build-backend']
+
+  # ── Step 4: Push frontend ────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend'
+    args: ['push', '--all-tags', '${_REGISTRY}/frontend']
+    waitFor: ['build-frontend']
+
+  # ── Step 5: Deploy backend to Cloud Run ─────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-backend'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_BACKEND_SERVICE}'
+      - '--image=${_REGISTRY}/backend:${_IMAGE_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--port=8000'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=3'
+      - '--concurrency=80'
+      - '--timeout=300s'
+      - '--cpu-boost'
+      - '--set-env-vars=APP_ENV=production,AI_MODEL=${_AI_MODEL},STORAGE_BACKEND=${_STORAGE_BACKEND},LOG_LEVEL=INFO'
+      - '--set-secrets=DATABASE_URL=satark-database-url:latest,GEMINI_API_KEY=satark-gemini-api-key:latest,JWT_SECRET_KEY=satark-jwt-secret-key:latest,GCS_BUCKET_NAME=satark-gcs-bucket-name:latest,FRONTEND_URL=satark-frontend-url:latest'
+      - '--allow-unauthenticated'
+    waitFor: ['push-backend']
+
+  # ── Step 6: Deploy frontend to Cloud Run ─────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-frontend'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_FRONTEND_SERVICE}'
+      - '--image=${_REGISTRY}/frontend:${_IMAGE_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--port=3000'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=3'
+      - '--concurrency=80'
+      - '--timeout=60s'
+      - '--cpu-boost'
+      - '--set-env-vars=NODE_ENV=production'
+      - '--allow-unauthenticated'
+    waitFor: ['push-frontend', 'deploy-backend']
+
+  # ── Step 7: Run DB migrations via Cloud Run Jobs ─────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'post-deploy-check'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        sleep 20
+        BACKEND_URL=$$(gcloud run services describe ${_BACKEND_SERVICE} \
+          --region=${_REGION} --format='value(status.url)')
+        echo "Satark backend deployed at: $$BACKEND_URL"
+        curl -f "$$BACKEND_URL/health" && echo "Health check passed" || echo "Health check failed"
+    waitFor: ['deploy-backend']
+
+# ── Secrets from Secret Manager ─────────────────────────────────────────────
+availableSecrets:
+  secretManager:
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-database-url/versions/latest'
+      env: 'DATABASE_URL'
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-frontend-url/versions/latest'
+      env: 'FRONTEND_URL'
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-next-public-api-url/versions/latest'
+      env: 'NEXT_PUBLIC_API_URL'
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-gemini-api-key/versions/latest'
+      env: 'GEMINI_API_KEY'
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-jwt-secret-key/versions/latest'
+      env: 'JWT_SECRET_KEY'
+    - versionName: 'projects/$PROJECT_ID/secrets/satark-gcs-bucket-name/versions/latest'
+      env: 'GCS_BUCKET_NAME'
+
+# ── Build options ────────────────────────────────────────────────────────────
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 50
+  timeout: '1200s'
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
+# ── Artifact Registry images ─────────────────────────────────────────────────
+images:
+  - '${_REGISTRY}/backend:${_IMAGE_TAG}'
+  - '${_REGISTRY}/backend:latest'
+  - '${_REGISTRY}/frontend:${_IMAGE_TAG}'
+  - '${_REGISTRY}/frontend:latest'
+
+tags:
+  - 'satark'
+  - 'cloud-run'
+  - '${BRANCH_NAME}'

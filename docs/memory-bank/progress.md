@@ -12,29 +12,24 @@
 - [x] 2026-04-26: Created `docs/06-phase-6-deployment.md` — phase plan
 - [x] 2026-04-26: Conducted gap analysis — 30 gaps identified
 - [x] 2026-04-26: Created Memory Bank (projectbrief, activeContext, progress, decisionLog)
+- [x] 2026-04-26: Rewrote all 13 agent rules for Satark
+- [x] 2026-04-27: **Phase 1.3** — Stripped template backend (Item model, GeoIP, template routes), rebranded to Satark API
+- [x] 2026-04-27: **Phase 1.4** — Stripped template frontend (NextAuth, layout, dark mode CSS), Satark placeholder + light-mode design system
+- [x] 2026-04-27: **Phase 1.5** — Environment config verified (.env.example already Satark-specific, .env created)
+- [x] 2026-04-27: **Phase 1.6** — Updated dependencies (backend: google-genai, PyJWT, bcrypt, etc. | frontend: SWR)
+- [x] 2026-04-27: **Phase 1.6b** — Cleared template Alembic migrations
+- [x] 2026-04-27: **Phase 1.6c** — Set up pytest.ini + conftest.py + 3 passing root endpoint tests
+- [x] 2026-04-27: **Phase 1.6e** — Created app/core/settings.py (pydantic-settings) + app/core/constants.py
+- [x] 2026-04-27: **Phase 1 misc** — Modernized database.py (DeclarativeBase), cleaned next.config, API client, middleware, seed script
 
 ## In Progress
-- [/] Rewriting all 13 agent rules for Satark
-- [/] Creating `docs/ai-integration.md`
-- [/] Creating `docs/api-spec.md`
-- [/] Creating `docs/satark-use-case.md`
-- [/] Updating all 6 phase plans with gap fixes
-
-## Planned — Phase 1 (Foundation)
-- [ ] Git initialization with clean history
-- [ ] Remove template artifacts (Item model, GeoIP, template routes, template frontend)
-- [ ] Update `.env.example` with Satark vars
-- [ ] Update `requirements.txt` with Satark deps
-- [ ] Add `output: "standalone"` to `next.config.ts`
-- [ ] Add deploy targets to Makefile
-- [ ] Reset/squash Alembic migrations for clean start
-- [ ] Create `pytest.ini` for test config
+- [/] Phase 2 — Backend Core (models, auth, CRUD) — NOT STARTED
 
 ## Planned — Phase 2 (Backend Core)
 - [ ] User, Incident, EvidenceFile, AuditLog models
 - [ ] Alembic migration
 - [ ] JWT auth (register, login, me)
-- [ ] Access control decorators (public/authenticated/analyst/admin)
+- [ ] Access control dependencies (require_role)
 - [ ] GCS storage service (+ local fallback)
 - [ ] Incident CRUD with file upload
 - [ ] Dashboard aggregation queries
@@ -52,7 +47,6 @@
 - [ ] Document analyzer
 - [ ] Analysis orchestrator
 - [ ] Polling strategy for async analysis
-- [ ] Aikido security scan on AI code
 
 ## Planned — Phase 4 (Frontend)
 - [ ] Design system (Tailwind tokens, globals.css)
@@ -75,17 +69,15 @@
 - [ ] Sample demo files in public/
 - [ ] Micro-animations and loading states
 - [ ] SEO meta tags
-- [ ] robots.txt (disallow all crawlers — defence portal)
+- [ ] robots.txt
 - [ ] Accessibility audit
-- [ ] Pre-commit lint + build validation
 
 ## Planned — Phase 6 (Deployment)
-- [ ] Update deployment scripts for Satark (service names, secrets)
+- [ ] Update deployment scripts for Satark
 - [ ] GCP project setup
 - [ ] Cloud SQL setup
 - [ ] GCS bucket setup
-- [ ] Deploy backend to Cloud Run
-- [ ] Deploy frontend to Cloud Run
+- [ ] Deploy to Cloud Run
 - [ ] Run migrations + seed production DB
 - [ ] End-to-end production verification
 - [ ] Final README update

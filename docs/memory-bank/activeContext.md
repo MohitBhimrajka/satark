@@ -1,32 +1,34 @@
 # Active Context
 
 ## Currently Working On
-Pre-build setup: all documentation, agent rules, Memory Bank, and gap analysis complete. Ready to begin Phase 1 implementation.
+Phase 1 is COMPLETE. Ready to begin Phase 2 — Backend Core (models, auth, CRUD).
 
 ## Current State
-- **Documentation:** All 7 phase docs written (docs/00 through docs/06)
-- **Memory Bank:** Just created (projectbrief, activeContext, progress, decisionLog)
-- **Agent Rules:** NEED REWRITE — currently reference Keycloak/dark mode/Supervity (incompatible with Satark)
-- **Codebase:** Template codebase exists — FastAPI + Next.js 15 — needs full cleanup and Satark buildout
-- **Database:** Template `Item` model only. All Satark models not yet written.
-- **Frontend:** Template landing page exists. All Satark pages not yet written.
-- **Deployment Scripts:** `deployment/gcloud-deploy.sh` and `deployment/cloudbuild.yaml` exist but have template placeholders.
+- **Backend:** Clean Satark API with health/root endpoints, error envelope, settings, constants, modern database module. All template code removed. Compiles and tests pass (3/3).
+- **Frontend:** Clean Satark placeholder with light-mode design system (Inter + JetBrains Mono), SWR installed, typed API client. Lint + build pass.
+- **Database:** Alembic configured with empty `versions/`. Ready for Satark models.
+- **Dependencies:** All Satark deps in `requirements.txt` (google-genai, PyJWT, bcrypt, python-multipart, httpx, reportlab, google-cloud-storage, pydantic-settings). Frontend has SWR.
+- **Git:** 20 atomic commits, clean working tree.
 
 ## Immediate Next Steps
-1. Rewrite all 13 `.agents/rules/` files for Satark (NO Keycloak, NO dark mode, NO policy engine)
-2. Create `docs/ai-integration.md` with all 6 prompt templates
-3. Create `docs/api-spec.md` with full envelope and error spec
-4. Create `docs/satark-use-case.md` for Rule 12 compliance
-5. Update all 6 phase plan docs with gap fixes
-6. Add `output: "standalone"` to `next.config.ts`
-7. Update `deployment/cloudbuild.yaml` with Satark service names and secrets
-8. Begin Phase 1 (git history + template cleanup)
+1. **Phase 2, Step 2.1:** Create `app/models/user.py` — User model with roles
+2. **Phase 2, Step 2.2:** Create `app/models/incident.py` — Incident model with case number
+3. **Phase 2, Step 2.3:** Create `app/models/evidence_file.py` — EvidenceFile model
+4. **Phase 2, Step 2.4:** Create `app/models/audit_log.py` — AuditLog model
+5. Create Alembic migration for all models
+6. Implement JWT auth (register, login, me)
 
 ## Blockers
-- User has not confirmed GitHub username for remote setup
-- User has not confirmed GCP project ID
+- None for Phase 2 start
+- GCP project ID not confirmed (needed for Phase 6)
+- GEMINI_API_KEY not set in `.env` (needed for Phase 3)
 
 ## Recent Changes
-- Created `docs/00-project-overview.md` through `docs/06-phase-6-deployment.md`
-- Created `docs/memory-bank/projectbrief.md`
-- Identified 30 gaps in gap analysis artifact
+- Stripped all template backend code (Item model, GeoIP, template routes)
+- Stripped all template frontend code (NextAuth, template layout, dark mode CSS)
+- Created centralized Settings with pydantic-settings
+- Created constants module (priority mapping, incident statuses, classifications)
+- Modernized database.py (DeclarativeBase, pool_pre_ping)
+- Set up pytest with 3 passing tests
+- Updated all dependencies for Satark
+- Cleared Alembic migrations

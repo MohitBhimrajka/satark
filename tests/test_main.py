@@ -1,34 +1,29 @@
 # tests/test_main.py
-import pytest
-from httpx import AsyncClient
-
-from app.main import app
-
-# Mark all tests in this file as async
-pytestmark = pytest.mark.asyncio
+"""Tests for Satark API root endpoints."""
 
 
-async def test_health_check():
-    """
-    Tests the public health check endpoint.
-    """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/health")
+def test_health(client):
+    """Health endpoint returns service name."""
+    response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["service"] == "satark-api"
 
 
-async def test_unauthorized_access():
-    """
-    Tests that protected endpoints require authentication.
-    """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/test")
-    assert response.status_code == 401
+def test_root(client):
+    """Root endpoint returns service info."""
+    response = client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["service"] == "Satark API"
+    assert data["version"] == "0.1.0"
 
 
-# Additional tests would include:
-# - Database integration tests
-# - Authorization engine tests
-# - API endpoint tests with mocked authentication
-# - Model validation tests
+def test_not_found_returns_error_envelope(client):
+    """404s return the standard Satark error envelope."""
+    response = client.get("/api/nonexistent")
+    assert response.status_code == 404
+    data = response.json()
+    assert "error" in data
+    assert data["error"]["code"] == "NOT_FOUND"

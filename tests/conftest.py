@@ -4,6 +4,7 @@ Satark Test Infrastructure — shared fixtures.
 Uses in-memory SQLite for fast, isolated tests.
 """
 import uuid
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -61,6 +62,20 @@ def override_db(db):
     app.dependency_overrides[get_db] = _get_test_db
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_ai_background_task():
+    """
+    Prevent the AI orchestrator background task from running in tests.
+    The task creates its own SessionLocal() pointing to PostgreSQL,
+    which isn't available in the test environment.
+    """
+    with patch(
+        "app.routers.incidents.analyze_incident",
+        new_callable=AsyncMock,
+    ):
+        yield
 
 
 # ── Test client ─────────────────────────────────────────────────────────────

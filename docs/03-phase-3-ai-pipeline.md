@@ -1,314 +1,366 @@
-# Phase 3 — AI Analysis Pipeline
+# Phase 3: AI Analysis Pipeline — Implementation Plan
 
-> **Goal:** Build the complete AI analysis engine using Gemini 3 structured output, supporting all input modalities (text, URL, image, audio, video, document).
-
-## Duration: ~25 commits
+> **Status:** Ready to implement  
+> **Depends on:** Phase 2 (complete ✅)  
+> **Blockers:** `GEMINI_API_KEY` must be set in `.env`  
+> **Estimated commits:** 12–15 atomic commits
 
 ---
 
-## Step 3.1 — AI Service Foundation
+## Overview
 
-### Tasks
-- [ ] Create `app/services/ai/__init__.py`
-- [ ] Create `app/services/ai/client.py`:
-  - Initialize `genai.Client(api_key=settings.GEMINI_API_KEY)`
-  - Singleton pattern to avoid re-initialization
-  - Error handling for API failures, rate limits, safety blocks
-  - Retry logic with exponential backoff
+Phase 3 builds the `app/services/ai/` module — a 6-modality AI analysis pipeline powered by `gemini-3-flash-preview`. Every incident submitted to Satark gets analyzed asynchronously via `BackgroundTasks`, with the frontend polling until analysis completes.
 
-- [ ] Create `app/services/ai/schemas.py`:
-  - `ThreatAnalysis` Pydantic model (matches API schema)
-  - `URLScanResult` (extends ThreatAnalysis with URL-specific fields)
-  - `AudioTranscription` (transcript + analysis)
-  - `DocumentAnalysis` (extracted text + threat analysis)
+### File Tree (what we're building)
 
-- [ ] Create `app/services/ai/prompts.py`:
-  - System prompts for each analysis type
-  - Prompt templates with variable injection
-  - Context-aware prompt building
-
-### Success Criteria
-- Client initializes correctly with API key
-- Retry logic handles transient failures
-- All Pydantic schemas match Gemini structured output format
-
-### Commits
 ```
-feat: add AI client singleton with retry logic
-feat: add AI analysis Pydantic schemas for structured output
-feat: add AI prompt templates for each analysis type
+app/services/ai/
+├── __init__.py
+├── client.py          # Gemini client singleton + retry wrapper
+├── schemas.py         # ThreatAnalysis Pydantic model (MOVE from app/schemas/analysis.py)
+├── prompts.py         # System prompt + 6 prompt templates
+├── orchestrator.py    # Routes incident → correct analyzer, updates DB
+├── analyzers/
+│   ├── __init__.py
+│   ├── text.py        # Text message analysis
+│   ├── url.py         # URL structure + metadata analysis
+│   ├── image.py       # Image analysis (inline bytes)
+│   ├── audio.py       # Audio analysis (Files API upload)
+│   ├── video.py       # Video analysis (Files API upload)
+│   └── document.py    # PDF/DOCX analysis (inline bytes or Files API)
+
+app/routers/
+├── analyze.py         # NEW — /api/analyze/text, /api/analyze/url, /api/analyze/file
 ```
 
 ---
 
-## Step 3.2 — Text Analysis
+## Step-by-Step Implementation
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/text.py`:
-  - `analyze_text(content: str) → ThreatAnalysis`
-  - Prompt: "You are a cybersecurity analyst. Analyze the following suspicious text for threats..."
-  - Extracts: phishing indicators, malicious URLs, social engineering patterns, IOCs
-  - Uses `response_mime_type: "application/json"` + `response_json_schema`
+### Step 1: `.env` + Settings Update
 
-- [ ] Create quick-scan endpoint:
-  - `POST /api/analyze/text` — accepts raw text, returns analysis
+**File:** `.env`, `app/core/settings.py`  
+**Commit:** `chore: add GEMINI_API_KEY placeholder and AI concurrency setting`
 
-### Success Criteria
-- Phishing SMS correctly classified as "phishing" with high threat score
-- Normal text classified as "safe" with low threat score
-- IOCs (phone numbers, URLs, email addresses) extracted from text
-- Response time < 5 seconds
-
-### Example Test Inputs
-```
-# Should classify as phishing
-"URGENT: Your SBI account has been blocked. Click http://sbi-verify.tk/login to verify now. Ref: SBI/2026/4451"
-
-# Should classify as safe
-"Hi team, the meeting has been moved to 3 PM tomorrow. Please update your calendars."
+Add to `settings.py`:
+```python
+AI_CONCURRENCY_LIMIT: int = 5  # Max parallel AI calls (free tier guard)
 ```
 
-### Commits
-```
-feat: add text analysis engine with structured output
-feat: add POST /api/analyze/text quick-scan endpoint
-test: add text analysis test cases (phishing vs safe)
+Add actual key to `.env`. The `GEMINI_API_KEY` setting already exists with default `""`.
+
+---
+
+### Step 2: Scaffold AI Service Package
+
+**Commit:** `feat: scaffold AI service package`
+
+Create:
+- `app/services/ai/__init__.py`
+- `app/services/ai/analyzers/__init__.py`
+
+---
+
+### Step 3: Move ThreatAnalysis to AI Package
+
+**Commit:** `refactor: move ThreatAnalysis to AI service package`
+
+Move `ThreatAnalysis` from `app/schemas/analysis.py` → `app/services/ai/schemas.py`. Keep a re-export in the original location so nothing breaks:
+
+```python
+# app/schemas/analysis.py — updated
+from app.services.ai.schemas import ThreatAnalysis  # re-export
 ```
 
 ---
 
-## Step 3.3 — URL Analysis
+### Step 4: Prompt Templates
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/url.py`:
-  - `analyze_url(url: str) → ThreatAnalysis`
-  - Step 1: Extract URL metadata (domain, path, query params, TLD)
-  - Step 2: Check for known suspicious patterns (typosquatting, homoglyph, unusual TLDs)
-  - Step 3: Send URL + metadata to Gemini for analysis
-  - Extracts: domain reputation signals, redirect chains, SSL status
+**Commit:** `feat: add all 6 AI prompt templates`
 
-- [ ] Create quick-scan endpoint:
-  - `POST /api/analyze/url` — accepts URL string, returns analysis
+**File:** `app/services/ai/prompts.py`
 
-### Success Criteria
-- Typosquatting URLs (e.g., `g00gle.com`) flagged as suspicious
-- Known safe domains (e.g., `google.com`) classified correctly
-- URL analysis includes domain breakdown
+Contains `SYSTEM_PROMPT_BASE` + 6 templates from `docs/ai-integration.md`:
 
-### Commits
+| Constant | Purpose |
+|----------|---------|
+| `SYSTEM_PROMPT_BASE` | CERT-Army analyst role, Indian context |
+| `TEXT_ANALYSIS_PROMPT` | Suspicious text/SMS |
+| `URL_ANALYSIS_PROMPT` | URL structure, TLD, typosquatting |
+| `IMAGE_ANALYSIS_PROMPT` | OCR + visual phishing |
+| `AUDIO_ANALYSIS_PROMPT` | Transcription + vishing |
+| `VIDEO_ANALYSIS_PROMPT` | Screen recording / deepfake |
+| `DOCUMENT_ANALYSIS_PROMPT` | Fake gov notices, embedded links |
+
+---
+
+### Step 5: Gemini Client Singleton
+
+**Commit:** `feat: add AI client singleton with retry and concurrency control`
+
+**File:** `app/services/ai/client.py`
+
+Key features:
+- **Singleton** — one `genai.Client`, created lazily
+- **Exponential backoff** — retries on `429 RESOURCE_EXHAUSTED` (3 attempts: 2s, 4s, 8s)
+- **Semaphore** — `asyncio.Semaphore(5)` prevents quota exhaustion
+- **Structured output** — `response_mime_type="application/json"` + `response_schema=ThreatAnalysis`
+- **Files API helper** — `upload_file_to_gemini()` for audio/video, polls until `state == ACTIVE`
+
+```python
+async def generate_structured(contents, response_schema, max_retries=3) -> str:
+    """Call Gemini with structured output. Returns raw JSON string."""
+
+async def upload_file_to_gemini(file_path, mime_type):
+    """Upload via Files API. Polls until ACTIVE."""
 ```
-feat: add URL metadata extraction utility
-feat: add URL analysis engine with domain reputation
-feat: add POST /api/analyze/url quick-scan endpoint
+
+> [!NOTE]  
+> `google-genai` SDK's `generate_content` is synchronous. Acceptable for demo — production would use `run_in_executor`.
+
+---
+
+### Step 6: Six Analyzer Modules
+
+Each follows the same interface:
+```python
+async def analyze(content_or_path: str, mime_type: str | None = None) -> ThreatAnalysis
+```
+
+#### 6a: `analyzers/text.py` — **Commit:** `feat: add text analyzer`
+- Input: raw text string
+- Builds prompt from `TEXT_ANALYSIS_PROMPT` template
+- Calls `generate_structured()` → `ThreatAnalysis.model_validate_json()`
+
+#### 6b: `analyzers/url.py` — **Commit:** `feat: add URL analyzer`
+- Input: URL string
+- Parses with `urllib.parse`: domain, TLD, path, HTTPS, length, is_shortened, has_IP, unusual_chars
+- Formats `URL_ANALYSIS_PROMPT` with extracted signals
+
+#### 6c: `analyzers/image.py` — **Commit:** `feat: add image analyzer`
+- Input: file path + mime_type
+- Reads file → `types.Part.from_bytes(data=bytes, mime_type=...)`
+- Contents: `[prompt_text, image_part]`
+
+#### 6d: `analyzers/audio.py` — **Commit:** `feat: add audio analyzer`
+- Input: file path + mime_type
+- Files > 20MB: Files API upload; smaller: inline bytes
+- Contents: `[prompt_text, audio_part]`
+
+#### 6e: `analyzers/video.py` — **Commit:** `feat: add video analyzer`
+- Input: file path + mime_type
+- **Always** uses Files API (videos need server-side processing)
+- Polls until `state == ACTIVE`
+
+#### 6f: `analyzers/document.py` — **Commit:** `feat: add document analyzer`
+- Input: file path + mime_type
+- PDF ≤ 50MB: `Part.from_bytes()`; DOCX: Files API upload
+
+---
+
+### Step 7: Orchestrator
+
+**Commit:** `feat: add AI orchestrator for background task analysis`
+
+**File:** `app/services/ai/orchestrator.py`
+
+Flow:
+1. Creates **own DB session** (`SessionLocal()`) — NOT the request-scoped one
+2. Sets `incident.status = "analyzing"`
+3. Routes to correct analyzer based on `input_type`
+4. For file-based types: resolves local file path from `evidence_files[0].storage_path`
+5. On success: writes `classification`, `threat_score`, `confidence`, `ai_analysis` (full dict), `priority` (via `score_to_priority()`), sets `status = "analyzed"`
+6. On failure: sets `status = "analysis_failed"`, logs error
+7. Creates audit log: `"ai_analysis_complete"` or `"ai_analysis_failed"` with `actor_label="AI_AGENT"`
+8. Always `db.close()` in `finally` block
+
+> [!IMPORTANT]
+> **DB Session in background tasks:** `Depends(get_db)` is closed after response. The orchestrator MUST create its own `SessionLocal()`.
+
+```python
+async def analyze_incident(incident_id: str) -> None:
+    from app.core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        # ... analysis logic ...
+    finally:
+        db.close()
 ```
 
 ---
 
-## Step 3.4 — Image Analysis
+### Step 8: Wire BackgroundTasks into Incident Creation
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/image.py`:
-  - `analyze_image(file_path: str, mime_type: str) → ThreatAnalysis`
-  - Read image bytes → send as `inline_data` to Gemini
-  - Prompt: "Analyze this image for cybersecurity threats. Look for phishing pages, fake login forms, suspicious QR codes, social engineering content..."
-  - Supports: PNG, JPG, WEBP, GIF
+**Commit:** `feat: trigger AI analysis on incident creation`
 
-- [ ] Integrate with incident creation:
-  - When `input_type == "image"`, run image analysis after upload
+**File:** `app/routers/incidents.py`
 
-### Success Criteria
-- Screenshot of fake bank login page → classified as phishing
-- Normal photo → classified as safe
-- OCR extracts text from images (URLs, phone numbers)
+```python
+from fastapi import BackgroundTasks
+from app.services.ai.orchestrator import analyze_incident
 
-### Commits
-```
-feat: add image analysis engine with multimodal input
-feat: integrate image analysis into incident pipeline
+@router.post("", status_code=201)
+async def create_incident(
+    background_tasks: BackgroundTasks,  # ADD
+    # ... rest unchanged
+):
+    incident = await incident_service.create_incident(...)
+    background_tasks.add_task(analyze_incident, str(incident.id))
+    return {"data": ..., "message": "Incident submitted. AI analysis in progress."}
 ```
 
 ---
 
-## Step 3.5 — Audio Analysis
+### Step 9: Quick-Scan Router
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/audio.py`:
-  - `analyze_audio(file_path: str, mime_type: str) → ThreatAnalysis`
-  - Send audio to Gemini Audio Understanding API
-  - Prompt: "Transcribe this audio and analyze for social engineering patterns, vishing attempts, threats, or suspicious requests..."
-  - Returns: transcription + threat analysis
-  - Supports: MP3, WAV, OGG, M4A, WEBM
+**Commit:** `feat: add quick-scan endpoints (text, URL, file)`
 
-- [ ] Integrate with incident creation:
-  - When `input_type == "audio"`, run audio analysis after upload
+**File:** `app/routers/analyze.py`
 
-### Success Criteria
-- Vishing recording → transcribed + classified as fraud/phishing
-- Normal voice note → classified as safe
-- Transcription included in analysis response
+| Endpoint | Input | Auth | Notes |
+|----------|-------|------|-------|
+| `POST /api/analyze/text` | `{"content": "..."}` | None | Synchronous, no DB |
+| `POST /api/analyze/url` | `{"content": "https://..."}` | None | Synchronous, no DB |
+| `POST /api/analyze/file` | Multipart upload | None | Save to temp, analyze, cleanup |
 
-### Commits
-```
-feat: add audio analysis engine with transcription
-feat: integrate audio analysis into incident pipeline
+Wire into `app/main.py`:
+```python
+from .routers import analyze
+app.include_router(analyze.router, prefix="/api")
 ```
 
 ---
 
-## Step 3.6 — Video Analysis
+### Step 10: `analysis_failed` Status
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/video.py`:
-  - `analyze_video(file_path: str, mime_type: str) → ThreatAnalysis`
-  - Upload video via Gemini Files API (for larger files)
-  - Prompt: "Analyze this video for cybersecurity-relevant content. Identify any suspicious activity, social engineering attempts, fake websites shown, or threat indicators..."
-  - Supports: MP4, WEBM, MOV
+**Commit:** `feat: add analysis_failed to incident status constants`
 
-- [ ] Integrate with incident creation:
-  - When `input_type == "video"`, run video analysis after upload
+**File:** `app/core/constants.py`
 
-### Success Criteria
-- Screen recording of phishing attack → classified correctly
-- Key moments identified with timestamps
+Add `ANALYSIS_FAILED = "analysis_failed"` to `IncidentStatus` class and `ALL` list.
 
-### Commits
-```
-feat: add video analysis engine using Gemini Files API
-feat: integrate video analysis into incident pipeline
+---
+
+### Step 11: URL Parsing Utility
+
+**Commit (bundled with Step 6b)**
+
+Internal helper in `analyzers/url.py` using `urllib.parse` — extracts domain, TLD, is_shortened (bit.ly, t.co, etc.), has_IP, has_unusual_chars.
+
+---
+
+### Step 12: Tests (10 Cases, All Mocked)
+
+**Commit:** `test: add AI pipeline unit tests with mocked responses`
+
+**File:** `tests/test_ai_pipeline.py`
+
+| # | Test | Strategy |
+|---|------|----------|
+| 1 | `test_text_analyzer_phishing` | Mock → classification=phishing |
+| 2 | `test_text_analyzer_safe` | Mock → classification=safe |
+| 3 | `test_url_analyzer_suspicious_tld` | Mock → .tk domain flagged |
+| 4 | `test_url_parse_signals` | Unit test URL parser (no mock) |
+| 5 | `test_orchestrator_updates_incident` | Mock analyzer + verify DB fields |
+| 6 | `test_orchestrator_handles_failure` | Mock raises → status=analysis_failed |
+| 7 | `test_score_to_priority_mapping` | Verify all ranges (no mock) |
+| 8 | `test_quick_scan_text_endpoint` | TestClient + mock |
+| 9 | `test_quick_scan_url_endpoint` | TestClient + mock |
+| 10 | `test_incident_triggers_background` | Verify task queued |
+
+Mock pattern:
+```python
+@patch("app.services.ai.client.get_ai_client")
+async def test_text_analyzer(mock_client):
+    mock_response = MagicMock()
+    mock_response.text = MOCK_PHISHING_JSON
+    mock_client.return_value.models.generate_content.return_value = mock_response
+    result = await text_analyzer.analyze("Click here to verify...")
+    assert result.classification == "phishing"
 ```
 
 ---
 
-## Step 3.7 — Document Analysis
+### Step 13: Docker Verification
 
-### Tasks
-- [ ] Create `app/services/ai/analyzers/document.py`:
-  - `analyze_document(file_path: str, mime_type: str) → ThreatAnalysis`
-  - Send PDF/document to Gemini Document Processing API
-  - Prompt: "Analyze this document for cybersecurity threats. Check for embedded malicious content, suspicious links, social engineering, phishing forms, or data exfiltration attempts..."
-  - Supports: PDF, DOCX (convert DOCX → PDF first if needed)
-
-- [ ] Integrate with incident creation:
-  - When `input_type == "document"`, run document analysis after upload
-
-### Success Criteria
-- Phishing PDF with fake form → classified correctly
-- Normal document → classified as safe
-- Extracted text included in analysis
-
-### Commits
-```
-feat: add document analysis engine for PDF processing
-feat: integrate document analysis into incident pipeline
+```bash
+make up && make logs-be   # No import errors
+make test-be              # All tests pass (mocked, no API key needed)
 ```
 
 ---
 
-## Step 3.8 — Analysis Orchestrator
+### Step 14: Memory Bank Update
 
-### Tasks
-- [ ] Create `app/services/ai/orchestrator.py`:
-  - `analyze_incident(incident_id, db)` — async, called as background task
-  - Routes to correct analyzer based on `incident.input_type`
-  - Handles mixed-mode: text description + uploaded file → both analyzed, results merged
-  - Updates incident `status`, `classification`, `threat_score`, `confidence`, `ai_analysis`
-  - Auto-assigns priority from threat_score via `app/core/constants.py:score_to_priority()`
-  - Creates AuditLog entry: `action="analyzed"`
+**Commit:** `docs: update Memory Bank — Phase 3 complete`
 
-- [ ] Create `app/core/constants.py`:
-  ```python
-  PRIORITY_MAP = {(80, 100): "critical", (60, 79): "high", (40, 59): "medium", (0, 39): "low"}
-  def score_to_priority(score: int) -> str: ...
-  ```
+---
 
-- [ ] **Async Polling Pattern (FastAPI BackgroundTasks):**
-  ```python
-  # In router: submit → return immediately, analysis in background
-  @router.post("/api/incidents", status_code=201)
-  async def create_incident(data, background_tasks: BackgroundTasks, db=Depends(get_db)):
-      incident = await incident_service.create(data, db)
-      background_tasks.add_task(analyze_incident, str(incident.id), db)
-      return {"data": IncidentResponse.from_orm(incident), "message": "Incident submitted. AI analysis in progress."}
-  
-  # Frontend polls every 2 seconds:
-  # GET /api/incidents/:id → check status field → stop when status != "analyzing"
-  ```
-  - See `frontend/src/hooks/usePolling.ts` pattern in `docs/satark-use-case.md`
+## Dependency Graph
 
-- [ ] Create `app/core/constants.py` — priority mapping (not business logic, just a display mapping)
-
-### Success Criteria
-- HTTP response for incident creation returns in < 500ms (before analysis)
-- Background task updates incident within 10-15 seconds
-- Status transitions: `pending` → `analyzing` → `reviewed` (or `analysis_failed`)
-- Frontend can poll and see update
-
-### Commits
-```
-feat: add analysis orchestrator routing by input type
-feat: add async background task for AI analysis (non-blocking)
-feat: add automatic status transitions after analysis
-feat: add priority auto-assignment from threat score
-feat: add analysis results storage and audit logging
+```mermaid
+graph TD
+    S1[Step 1: .env + settings] --> S2[Step 2: ai/ scaffold]
+    S2 --> S3[Step 3: schemas.py]
+    S2 --> S4[Step 4: prompts.py]
+    S3 --> S5[Step 5: client.py]
+    S4 --> S6[Step 6: 6 analyzers]
+    S5 --> S6
+    S6 --> S7[Step 7: orchestrator]
+    S7 --> S8[Step 8: BackgroundTasks]
+    S6 --> S9[Step 9: /api/analyze/*]
+    S7 --> S10[Step 10: analysis_failed]
+    S8 --> S12[Step 12: Tests]
+    S9 --> S12
+    S12 --> S13[Step 13: Docker verify]
+    S13 --> S14[Step 14: Memory Bank]
 ```
 
 ---
 
-## Step 3.9 — Security Review of AI Code
+## Key Design Decisions
 
-> Note: Aikido Security MCP is not active in this project. Perform manual security review.
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| DB session in background task | New `SessionLocal()` | Request-scoped session is closed when BackgroundTask runs |
+| File upload method | Inline (<20MB) vs Files API (>20MB) | Per Google docs: inline limit 100MB, but Files API needed for video processing state |
+| Video always uses Files API | Yes | Videos need server-side processing |
+| Concurrency limit | `asyncio.Semaphore(5)` | Free tier rate limits |
+| Structured output | `response_schema=ThreatAnalysis` | SDK accepts Pydantic models directly |
+| Quick scan = no DB write | Yes | `/api/analyze/*` returns results directly |
+| Prompts as constants | `prompts.py` only | Per Rule 06: never inline strings |
 
-### Tasks
-- [ ] Review `app/services/ai/client.py` — API key never logged, loaded only from `settings.GEMINI_API_KEY`
-- [ ] Review `app/services/storage.py` — MIME type validation, max file size enforced (10MB images, 100MB video), no path traversal
-- [ ] Review `app/security.py` — JWT secret key never hardcoded, bcrypt rounds >= 12, no timing attacks in token comparison
-- [ ] Run Python's built-in security check: `pip install bandit && bandit -r app/`
-- [ ] Verify no API keys appear in git history: `git log -p | grep -i 'api_key\|secret\|password'`
+## Risk Mitigations
 
-> **MCP to use:** `mcp_google-developer-knowledge_answer_query("Cloud Run security best practices secret manager environment variables")` for patterns on securing secrets in Cloud Run.
-
-### Commits
-```
-fix: harden AI client key loading and add bandit security check
-fix: enforce MIME type validation and file size limits in storage service
-```
-
----
-
-## Step 3.10 — AI Error Handling & Safety
-
-### Tasks
-- [ ] Handle Gemini safety blocks (content filtered)
-  - Graceful fallback: mark analysis as "inconclusive"
-  - Store raw error for admin review
-- [ ] Handle rate limiting (429 errors)
-  - Queue system or retry with backoff
-- [ ] Handle API outages
-  - Incident remains in "analyzing" status
-  - Background retry every 5 minutes (max 3 attempts)
-- [ ] Log all AI interactions for debugging
-
-### Success Criteria
-- No unhandled exceptions from AI service
-- Safety blocks result in graceful degradation
-- Rate limits handled with backoff
-
-### Commits
-```
-feat: add AI error handling for safety blocks and rate limits
-feat: add retry mechanism for failed AI analyses
-```
+| Risk | Mitigation |
+|------|------------|
+| API key not set | Startup warning; endpoints return 503 |
+| Malformed AI JSON | `model_validate_json()` → `ValidationError` → `analysis_failed` |
+| Rate limiting (429) | Exponential backoff × 3 retries |
+| Large video timeout | Files API polling, 5-min hard timeout |
+| DB session leak in background | `try/finally` with `db.close()` |
+| `google-genai` dependency | ✅ Already in `packages/requirements.txt` |
 
 ---
 
-## Phase 3 Output
+## Checklist
 
-At the end of Phase 3:
-- ✅ Complete AI pipeline for all 6 input types
-- ✅ Structured JSON output via Pydantic schemas
-- ✅ Background async analysis
-- ✅ Automatic status transitions
-- ✅ Error handling and retry logic
-- ✅ ~25 atomic commits
-- ✅ Every analysis type testable via Swagger `/docs`
-- ✅ Ready for Phase 4 (frontend)
+- [ ] Step 1: `.env` + settings
+- [ ] Step 2: `ai/` package scaffold
+- [ ] Step 3: Move `ThreatAnalysis` to `ai/schemas.py`
+- [ ] Step 4: `prompts.py` — 6 templates
+- [ ] Step 5: `client.py` — singleton + retry + semaphore
+- [ ] Step 6a: `analyzers/text.py`
+- [ ] Step 6b: `analyzers/url.py`
+- [ ] Step 6c: `analyzers/image.py`
+- [ ] Step 6d: `analyzers/audio.py`
+- [ ] Step 6e: `analyzers/video.py`
+- [ ] Step 6f: `analyzers/document.py`
+- [ ] Step 7: `orchestrator.py`
+- [ ] Step 8: Wire `BackgroundTasks` into incident creation
+- [ ] Step 9: `/api/analyze/*` quick-scan router
+- [ ] Step 10: `analysis_failed` status constant
+- [ ] Step 11: URL parsing utility
+- [ ] Step 12: Tests (10 cases, all mocked)
+- [ ] Step 13: Docker verification
+- [ ] Step 14: Memory Bank update

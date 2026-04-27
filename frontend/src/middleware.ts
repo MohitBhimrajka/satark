@@ -1,8 +1,8 @@
 // frontend/src/middleware.ts
 /**
  * Satark Next.js Middleware.
- * Edge-level route protection: checks for token in localStorage is not possible
- * at the edge, so we only do a lightweight cookie/header check here.
+ * Edge-level route protection for protected paths.
+ * Checks for the 'satark_auth' cookie set by the AuthContext.
  * The real auth gate is in (protected)/layout.tsx via useAuth().
  */
 import { NextResponse } from 'next/server'
@@ -13,16 +13,19 @@ const PROTECTED_PATHS = ['/dashboard', '/workbench', '/admin']
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Check if path is protected
   const isProtected = PROTECTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   )
 
   if (isProtected) {
-    // In a real deployment we'd check a secure httpOnly cookie.
-    // For SIH demo with localStorage JWT, the client-side layout handles the redirect.
-    // This middleware is a lightweight guard for direct URL access.
-    // If we later add cookie-based auth, the check goes here.
+    // Check for auth indicator cookie (set by client-side AuthContext).
+    // This is a lightweight check — the real JWT validation happens server-side.
+    const hasAuth = request.cookies.get('satark_auth')
+    if (!hasAuth) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
   return NextResponse.next()

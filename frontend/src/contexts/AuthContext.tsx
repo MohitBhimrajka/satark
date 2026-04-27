@@ -26,6 +26,15 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
+/** Set or clear a lightweight cookie so the edge middleware can detect auth. */
+function setAuthCookie(active: boolean) {
+  if (active) {
+    document.cookie = 'satark_auth=1; path=/; max-age=86400; SameSite=Lax'
+  } else {
+    document.cookie = 'satark_auth=; path=/; max-age=0'
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setTokenState] = useState<string | null>(null)
@@ -57,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.data.access_token)
     setTokenState(res.data.access_token)
     setUser(res.data.user)
+    setAuthCookie(true)
   }, [])
 
   const register = useCallback(
@@ -68,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(res.data.access_token)
       setTokenState(res.data.access_token)
       setUser(res.data.user)
+      setAuthCookie(true)
     },
     []
   )
@@ -76,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     removeToken()
     setTokenState(null)
     setUser(null)
+    setAuthCookie(false)
   }, [])
 
   const value = useMemo(

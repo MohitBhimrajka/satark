@@ -11,7 +11,8 @@ import { formatDateTime } from '@/lib/utils'
 import api from '@/lib/api-client'
 import toast from 'react-hot-toast'
 import { Users, Loader2 } from 'lucide-react'
-import type { User } from '@/types'
+import type { User, ApiListResponse } from '@/types'
+import { ROLES } from '@/lib/constants'
 
 export default function AdminPage() {
   const { isAdmin } = useAuth()
@@ -26,8 +27,8 @@ export default function AdminPage() {
       return
     }
 
-    api.get<User[]>('/api/users')
-      .then(setUsers)
+    api.get<ApiListResponse<User>>('/api/admin/users')
+      .then((res) => setUsers(res.data))
       .catch(() => toast.error('Failed to load users'))
       .finally(() => setLoading(false))
   }, [isAdmin, router])
@@ -35,9 +36,9 @@ export default function AdminPage() {
   const handleRoleChange = async (userId: string, newRole: string) => {
     setUpdatingId(userId)
     try {
-      await api.patch<User>(`/api/users/${userId}`, { role: newRole })
+      const res = await api.patch<{ data: User }>(`/api/admin/users/${userId}`, { role: newRole })
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole as User['role'] } : u))
+        prev.map((u) => (u.id === userId ? { ...u, ...res.data, role: newRole as User['role'] } : u))
       )
       toast.success('Role updated')
     } catch {
@@ -135,9 +136,11 @@ export default function AdminPage() {
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className='rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700'
                         >
-                          <option value='viewer'>Viewer</option>
-                          <option value='analyst'>Analyst</option>
-                          <option value='admin'>Admin</option>
+                          {ROLES.map((role) => (
+                            <option key={role} value={role}>
+                              {role.charAt(0).toUpperCase() + role.slice(1)}
+                            </option>
+                          ))}
                         </select>
                       )}
                     </td>

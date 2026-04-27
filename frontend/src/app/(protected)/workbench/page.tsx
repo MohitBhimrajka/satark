@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api-client'
-import type { Incident, Priority, PaginatedResponse } from '@/types'
+import type { Incident, Priority, ApiListResponse } from '@/types'
 
 const STATUSES = [
   { value: '', label: 'All' },
@@ -39,15 +39,15 @@ export default function WorkbenchPage() {
     try {
       const params = new URLSearchParams()
       params.set('page', String(page))
-      params.set('per_page', '20')
+      params.set('page_size', '20')
       if (statusFilter) params.set('status', statusFilter)
       if (search.trim()) params.set('search', search.trim())
 
-      const res = await api.get<PaginatedResponse<Incident>>(
+      const res = await api.get<ApiListResponse<Incident>>(
         `/api/incidents?${params.toString()}`
       )
-      setIncidents(res.items)
-      setTotalPages(res.total_pages)
+      setIncidents(res.data)
+      setTotalPages(res.pagination.total_pages)
     } catch {
       setIncidents([])
     } finally {

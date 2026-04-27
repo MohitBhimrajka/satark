@@ -46,7 +46,7 @@ export default function WorkbenchDetailPage() {
     try {
       await api.patch(`/api/incidents/${incidentId}`, {
         status: newStatus,
-        notes: notes || undefined,
+        analyst_notes: notes || undefined,
       })
       toast.success(`Status updated to ${STATUS_LABELS[newStatus] || newStatus}`)
       setNewStatus('')

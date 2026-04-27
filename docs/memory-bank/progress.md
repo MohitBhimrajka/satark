@@ -60,9 +60,40 @@
   - [x] Removed template supervity-favicon.png
   - [x] Extracted auth forms (LoginForm, RegisterForm) + page views (DashboardView, WorkbenchList, AdminPanel) into components/
 
+- [x] Phase 5: Polish & Testing — 2026-04-27
+  - [x] Step 5.1: PDF Report Generation
+    - [x] app/services/report.py — ReportLab 9-section branded PDF
+    - [x] GET /api/incidents/:id/report endpoint with audit logging (report_generated)
+    - [x] ReportDownloadButton on case + workbench detail pages
+    - [x] 7 tests (service + endpoint + audit log verification)
+  - [x] Step 5.2: Demo Seed Data
+    - [x] scripts/seed_demo_data.py — 20 realistic incidents across all types
+    - [x] Restructured demo-samples.json to {label, url/content} format
+    - [x] Updated TryItNow loadSample() for new format
+  - [x] Step 5.3: Camera & Microphone Integration
+    - [x] CameraCapture component (getUserMedia video)
+    - [x] AudioRecorder component (MediaRecorder + 60s auto-stop)
+    - [x] Wired into TryItNow image/audio tabs
+  - [x] Step 5.4: UI Polish & Micro-Animations
+    - [x] PageTransition wrapper (Framer Motion fade+slide)
+    - [x] StaggerList component for sequential animations
+    - [x] Button press feedback (active:scale-[0.97])
+    - [x] StatCard hover lift effect
+    - [x] Wired PageTransition into protected layout
+  - [x] Step 5.5: SEO & Accessibility
+    - [x] Full OG + Twitter Card metadata
+    - [x] Generated branded OG image (1200x630)
+    - [x] Skip-to-content link
+    - [x] Focus-visible outlines on all interactive elements
+    - [x] Smooth scroll behavior
+  - [x] Step 5.6: Validation
+    - [x] 52 tests passing (all suites)
+    - [x] 0 lint errors (frontend + backend)
+    - [x] Clean production build (10 routes)
+    - [x] No console.log/print/vendor names in UI
+
 ## In Progress
-- [/] Phase 5: Integration & Polish (PDF reports, demo seed data, OG tags)
+- [/] Phase 6: Deployment (Cloud Run, GCS, CI/CD)
 
 ## Planned
-- [ ] Phase 5: Integration & Polish (PDF reports, demo seed data, OG tags, final UX)
 - [ ] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

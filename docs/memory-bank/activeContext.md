@@ -1,37 +1,25 @@
 # Active Context
 
 ## Currently Working On
-Phase 4 Gap Remediation — COMPLETED. All critical bugs fixed, all HIGH priority items addressed.
+Phase 6: Deployment — Cloud Run, GCS, CI/CD
 
 ## Current State
-- **Frontend:** 10 routes compiling, 0 lint errors, production build passes
-- **Backend:** 45 tests passing (Phase 2 + 3), AI pipeline with grounding, admin stats endpoint added
-- **Docker:** Full-stack containers operational (PostgreSQL + FastAPI + Next.js)
-- **Gap Analysis Status:**
-  - 🔴 5/5 CRITICAL bugs → ALL FIXED (admin path, role, envelope, analyst_notes, middleware)
-  - 🟠 6/6 HIGH items → ALL FIXED (Framer Motion, RHF+Zod, component extraction, demo-samples, SEO, analyst controls)
-  - 🟡 7/7 MEDIUM items → ALL FIXED (ThreatScore animation, chart types, error handling, useIncidents, admin stats)
-  - 🟢 Phase 1 cleanup → FIXED (removed supervity-favicon.png)
-- **Architecture Improvements:**
-  - Pages split into server wrappers (metadata) + client components
-  - 3 new reusable components: EvidenceList, AuditTimeline, AnalystControls
-  - Auth forms (LoginForm, RegisterForm) extracted to components/auth/
-  - Protected page components extracted: DashboardView, WorkbenchList, AdminPanel
-  - Middleware now does actual cookie-based auth check with redirect to /login
+- Phases 1–5 **COMPLETE** — all features built, tested, polished
+- 52 tests passing, 0 lint errors, clean production build
+- 10 frontend routes compiling, 11 API endpoints working
+- PDF report generation, camera/mic integration, demo seed script all done
 
 ## Immediate Next Steps
-1. **Phase 5: Polish & Testing** — PDF reports, demo seed data (15-20 incidents), OG tags, final UX refinements
-2. **Phase 6: Deployment** — Cloud Run, GCS storage, CI/CD pipeline
+1. Review Phase 6 deployment plan (`docs/06-phase-6-deployment.md`)
+2. Set up Cloud Run service + GCS bucket for file storage
+3. Configure CI/CD pipeline for automated deployments
 
 ## Blockers
-- None for P1-P4. All identified gaps resolved.
+None
 
-## Recent Changes
-- [2026-04-27] Refactored WorkbenchList to use useIncidents SWR hook
-- [2026-04-27] Added GET /api/admin/stats endpoint
-- [2026-04-27] Removed template supervity-favicon.png
-- [2026-04-27] Added per-page SEO metadata via server component wrappers
-- [2026-04-27] Extracted EvidenceList, AuditTimeline, AnalystControls components
-- [2026-04-27] Wired React Hook Form + Zod into login and register
-- [2026-04-27] Added Framer Motion to Hero, HowItWorks, ThreatScore, ResultCard
-- [2026-04-27] Fixed 5 critical bugs: admin API path, role options, response envelope, analyst_notes field, middleware auth
+## Recent Changes (Phase 5 — 2026-04-27)
+1. **PDF Reports:** ReportLab service generating 9-section branded PDFs, endpoint with audit logging, download button on case/workbench pages
+2. **Demo Seed Data:** 20 realistic incidents across all classifications/statuses/input types, restructured demo-samples.json
+3. **Camera/Mic:** CameraCapture and AudioRecorder components wired into TryItNow
+4. **UI Polish:** PageTransition, StaggerList, button press feedback, card hover effects
+5. **SEO/A11y:** OG tags, branded OG image, skip-to-content link, focus-visible outlines

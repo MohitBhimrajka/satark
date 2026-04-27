@@ -91,6 +91,12 @@
     - [x] 0 lint errors (frontend + backend)
     - [x] Clean production build (10 routes)
     - [x] No console.log/print/vendor names in UI
+  - [x] Phase 5 Gap Remediation — 2026-04-27
+    - [x] PageTransition wired into public layout (was missing)
+    - [x] Camera/Mic capture added to /submit form for image/audio types
+    - [x] StaggerList wired into dashboard stat cards (was unused)
+    - [x] ARIA labels on sidebar, header logout button
+    - [x] AnalyzingState: role=status + aria-live for screen readers
 
 ## In Progress
 - [/] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

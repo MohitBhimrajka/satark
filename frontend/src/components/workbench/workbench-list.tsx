@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Search, Filter, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import api from '@/lib/api-client'
-import type { Incident, Priority, ApiListResponse } from '@/types'
+import { useIncidents } from '@/hooks/useIncidents'
+import type { Priority } from '@/types'
 
 const STATUSES = [
   { value: '', label: 'All' },
@@ -27,42 +27,24 @@ const STATUSES = [
 ]
 
 export function WorkbenchList() {
-  const [incidents, setIncidents] = useState<Incident[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
 
-  const fetchIncidents = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      params.set('page', String(page))
-      params.set('page_size', '20')
-      if (statusFilter) params.set('status', statusFilter)
-      if (search.trim()) params.set('search', search.trim())
+  const { incidents, pagination, isLoading, mutate } = useIncidents({
+    status: statusFilter || undefined,
+    search: searchQuery || undefined,
+    page,
+    page_size: 20,
+  })
 
-      const res = await api.get<ApiListResponse<Incident>>(
-        `/api/incidents?${params.toString()}`
-      )
-      setIncidents(res.data)
-      setTotalPages(res.pagination.total_pages)
-    } catch {
-      setIncidents([])
-    } finally {
-      setLoading(false)
-    }
-  }, [page, statusFilter, search])
-
-  useEffect(() => {
-    fetchIncidents()
-  }, [fetchIncidents])
+  const totalPages = pagination?.total_pages ?? 1
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
+    setSearchQuery(search.trim())
     setPage(1)
-    fetchIncidents()
   }
 
   return (
@@ -71,7 +53,7 @@ export function WorkbenchList() {
         title='Workbench'
         description='Manage and triage incident cases.'
         actions={
-          <Button variant='outline' size='sm' onClick={fetchIncidents}>
+          <Button variant='outline' size='sm' onClick={() => mutate()}>
             <RefreshCw className='mr-2 h-3.5 w-3.5' strokeWidth={2} />
             Refresh
           </Button>
@@ -114,7 +96,7 @@ export function WorkbenchList() {
 
       {/* Table */}
       <div className='rounded-xl border border-gray-200 bg-white shadow-soft'>
-        {loading ? (
+        {isLoading ? (
           <div className='space-y-0'>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className='flex items-center gap-4 border-b border-gray-100 px-5 py-3'>

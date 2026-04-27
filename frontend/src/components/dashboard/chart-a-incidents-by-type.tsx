@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import api from '@/lib/api-client'
-import type { ChartData, ChartDataPoint } from '@/types'
+import type { ApiResponse, ChartData, ChartDataPoint } from '@/types'
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -21,8 +21,8 @@ export function DonutChart({ chartType, title }: DonutChartProps) {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    api.get<ChartData>(`/api/dashboard/charts/${chartType}`)
-      .then(setData)
+    api.get<ApiResponse<ChartData>>(`/api/dashboard/charts/${chartType}`)
+      .then((res) => setData(res.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [chartType])

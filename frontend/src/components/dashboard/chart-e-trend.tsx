@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import api from '@/lib/api-client'
-import type { ChartData, ChartDataPoint } from '@/types'
+import type { ApiResponse, ChartData, ChartDataPoint } from '@/types'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -14,8 +14,8 @@ export function ChartTrend() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    api.get<ChartData>('/api/dashboard/charts/trend_line')
-      .then(setData)
+    api.get<ApiResponse<ChartData>>('/api/dashboard/charts/trend_line')
+      .then((res) => setData(res.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])

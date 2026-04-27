@@ -6,7 +6,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import api from '@/lib/api-client'
 import toast from 'react-hot-toast'
-import type { DashboardStats, ChartData, ChartDataPoint } from '@/types'
+import type { ApiResponse, DashboardStats, ChartData, ChartDataPoint } from '@/types'
 import {
   PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -41,8 +41,8 @@ function ChartCard({ chartType }: { chartType: ChartType }) {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    api.get<ChartData>(`/api/dashboard/charts/${chartType}`)
-      .then(setData)
+    api.get<ApiResponse<ChartData>>(`/api/dashboard/charts/${chartType}`)
+      .then((res) => setData(res.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [chartType])
@@ -139,8 +139,8 @@ export function DashboardView() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get<DashboardStats>('/api/dashboard/stats')
-      .then(setStats)
+    api.get<ApiResponse<DashboardStats>>('/api/dashboard/stats')
+      .then((res) => setStats(res.data))
       .catch(() => toast.error('Failed to load dashboard stats'))
       .finally(() => setLoading(false))
   }, [])

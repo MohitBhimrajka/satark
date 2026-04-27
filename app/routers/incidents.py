@@ -30,10 +30,55 @@ from app.schemas.incident import (
     PaginationMeta,
 )
 from app.security import get_current_user, get_optional_user, require_role
+from app.services import audit as audit_service
 from app.services import incident as incident_service
 from app.services.ai.orchestrator import analyze_incident
+from app.services.report import generate_report
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
+
+
+@router.get(
+    "/{incident_id}/report",
+    dependencies=[Depends(require_role("analyst", "admin"))],
+)
+def download_report(
+    incident_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Download a PDF report for an incident. Analyst+ only."""
+    from fastapi.responses import Response
+
+    incident = incident_service.get_incident(incident_id, db)
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Incident not found",
+        )
+
+    pdf_bytes = generate_report(incident)
+
+    # Log the report generation in the audit trail
+    audit_service.log_action(
+        db=db,
+        action="report_generated",
+        incident_id=incident.id,
+        user_id=user.id,
+        actor_label=user.display_name,
+        details={"format": "pdf"},
+    )
+    db.commit()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="satark-{incident.case_number}.pdf"'
+            )
+        },
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

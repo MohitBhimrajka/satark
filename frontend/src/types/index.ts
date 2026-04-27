@@ -1,7 +1,7 @@
 /**
  * Satark — Barrel export for all types.
  */
-export type { ApiResponse, ApiListResponse, ApiError, PaginationMeta } from './api'
+export type { ApiResponse, ApiListResponse, ApiError, PaginationMeta, PaginatedResponse } from './api'
 export type { User, UserCreate, UserLogin, TokenResponse } from './user'
 export type {
   Incident,

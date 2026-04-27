@@ -22,6 +22,15 @@ export interface PaginationMeta {
   total_pages: number
 }
 
+/** Flat paginated response (used by incident list). */
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
 /** Standard error envelope. */
 export interface ApiError {
   error: {

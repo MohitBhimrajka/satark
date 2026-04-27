@@ -2,20 +2,25 @@
 
 import { useParams, useSearchParams } from 'next/navigation'
 import { usePolling } from '@/hooks/usePolling'
+import { useAuth } from '@/hooks/useAuth'
 import { AnalyzingState } from '@/components/analysis/analyzing-state'
 import { ResultCard } from '@/components/analysis/result-card'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatDateTime, formatFileSize } from '@/lib/utils'
-import { FileIcon, Clock, User } from 'lucide-react'
-import type { ThreatAnalysis, Priority } from '@/types'
+import { EvidenceList } from '@/components/incidents/evidence-list'
+import { AuditTimeline } from '@/components/incidents/audit-timeline'
+import { AnalystControls } from '@/components/incidents/analyst-controls'
+import { formatDateTime } from '@/lib/utils'
+import { Clock } from 'lucide-react'
+import type { ThreatAnalysis, Priority, IncidentStatus } from '@/types'
 
 export default function CaseDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const incidentId = params.id as string
   const token = searchParams.get('token')
+  const { isAnalyst } = useAuth()
 
   const { incident, isAnalyzing, isLoading, error } = usePolling(
     incidentId,
@@ -105,57 +110,22 @@ export default function CaseDetailPage() {
         </div>
       )}
 
+      {/* Analyst Controls — only for authenticated analysts */}
+      {isAnalyst && (
+        <AnalystControls
+          incidentId={incidentId}
+          currentStatus={incident.status as IncidentStatus}
+        />
+      )}
+
       {/* Evidence Files */}
       {incident.evidence_files && incident.evidence_files.length > 0 && (
-        <div className='space-y-3'>
-          <h2 className='text-lg font-semibold text-gray-900'>Evidence Files</h2>
-          <div className='space-y-2'>
-            {incident.evidence_files.map((file) => (
-              <div
-                key={file.id}
-                className='flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3'
-              >
-                <FileIcon className='h-5 w-5 text-blue-500' strokeWidth={1.5} />
-                <div className='flex-1 min-w-0'>
-                  <p className='truncate text-sm font-medium text-gray-900'>
-                    {file.original_filename}
-                  </p>
-                  <p className='text-xs text-gray-500'>
-                    {file.mime_type} &bull; {formatFileSize(file.file_size)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <EvidenceList files={incident.evidence_files} />
       )}
 
       {/* Audit Trail */}
       {incident.audit_logs && incident.audit_logs.length > 0 && (
-        <div className='space-y-3'>
-          <h2 className='text-lg font-semibold text-gray-900'>Audit Trail</h2>
-          <div className='space-y-0 border-l-2 border-gray-200 pl-6'>
-            {incident.audit_logs.map((log) => (
-              <div key={log.id} className='relative pb-6 last:pb-0'>
-                <div className='absolute -left-[31px] top-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-blue-500'>
-                  <div className='h-1.5 w-1.5 rounded-full bg-white' />
-                </div>
-                <div>
-                  <p className='text-sm font-medium text-gray-900'>
-                    {log.action}
-                  </p>
-                  <div className='mt-0.5 flex items-center gap-2 text-xs text-gray-500'>
-                    <span className='flex items-center gap-1'>
-                      <User className='h-3 w-3' strokeWidth={1.5} />
-                      {log.actor_label}
-                    </span>
-                    <span>{formatDateTime(log.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AuditTimeline logs={incident.audit_logs} />
       )}
     </div>
   )

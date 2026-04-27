@@ -1,31 +1,20 @@
 'use client'
 
-import { useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ResultCard } from '@/components/analysis/result-card'
 import { AnalyzingState } from '@/components/analysis/analyzing-state'
-import { formatDateTime, formatFileSize } from '@/lib/utils'
+import { EvidenceList } from '@/components/incidents/evidence-list'
+import { AuditTimeline } from '@/components/incidents/audit-timeline'
+import { AnalystControls } from '@/components/incidents/analyst-controls'
+import { formatDateTime } from '@/lib/utils'
 import { usePolling } from '@/hooks/usePolling'
-import api from '@/lib/api-client'
-import toast from 'react-hot-toast'
 import Link from 'next/link'
 import type { ThreatAnalysis, Priority, IncidentStatus } from '@/types'
-import { STATUS_LABELS } from '@/lib/constants'
-
-const ACTIONABLE_STATUSES: IncidentStatus[] = [
-  'analyzed',
-  'investigating',
-  'escalated',
-  'resolved',
-  'closed',
-]
 
 export default function WorkbenchDetailPage() {
   const params = useParams()
@@ -34,29 +23,6 @@ export default function WorkbenchDetailPage() {
   const { incident, isAnalyzing, isLoading } = usePolling(incidentId, null, {
     enabled: true,
   })
-
-  const [newStatus, setNewStatus] = useState('')
-  const [notes, setNotes] = useState('')
-  const [isUpdating, setIsUpdating] = useState(false)
-
-  const handleStatusUpdate = async () => {
-    if (!newStatus) return
-    setIsUpdating(true)
-
-    try {
-      await api.patch(`/api/incidents/${incidentId}`, {
-        status: newStatus,
-        analyst_notes: notes || undefined,
-      })
-      toast.success(`Status updated to ${STATUS_LABELS[newStatus] || newStatus}`)
-      setNewStatus('')
-      setNotes('')
-    } catch {
-      toast.error('Failed to update status.')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
 
   if (isLoading) {
     return (
@@ -168,87 +134,20 @@ export default function WorkbenchDetailPage() {
       {/* AI Analysis */}
       {analysis && !isAnalyzing && <ResultCard analysis={analysis} />}
 
-      {/* Status Update (analyst action) */}
-      {!isAnalyzing &&
-        incident.status !== 'submitted' &&
-        incident.status !== 'closed' && (
-          <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-soft'>
-            <h3 className='text-sm font-semibold text-gray-900'>Update Status</h3>
-            <div className='mt-3 flex flex-col gap-3 sm:flex-row'>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                className='h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1'
-              >
-                <option value=''>Choose status...</option>
-                {ACTIONABLE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-              <Textarea
-                placeholder='Add analyst notes (optional)...'
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className='flex-1'
-              />
-              <Button
-                onClick={handleStatusUpdate}
-                disabled={!newStatus || isUpdating}
-                className='self-end'
-              >
-                {isUpdating ? (
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                ) : null}
-                {isUpdating ? 'Updating...' : 'Update'}
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* Analyst Controls */}
+      <AnalystControls
+        incidentId={incidentId}
+        currentStatus={incident.status as IncidentStatus}
+      />
 
       {/* Evidence Files */}
       {incident.evidence_files && incident.evidence_files.length > 0 && (
-        <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-soft'>
-          <h3 className='text-sm font-semibold text-gray-900'>Evidence Files</h3>
-          <div className='mt-3 space-y-2'>
-            {incident.evidence_files.map((file) => (
-              <div
-                key={file.id}
-                className='flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3'
-              >
-                <div>
-                  <p className='text-sm font-medium text-gray-900'>{file.original_filename}</p>
-                  <p className='text-xs text-gray-500'>
-                    {file.mime_type} &bull; {formatFileSize(file.file_size)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <EvidenceList files={incident.evidence_files} />
       )}
 
       {/* Audit Trail */}
       {incident.audit_logs && incident.audit_logs.length > 0 && (
-        <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-soft'>
-          <h3 className='text-sm font-semibold text-gray-900'>Audit Trail</h3>
-          <div className='mt-3 space-y-3'>
-            {incident.audit_logs.map((log) => (
-              <div
-                key={log.id}
-                className='flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5'
-              >
-                <div>
-                  <p className='text-sm font-medium text-gray-900'>{log.action}</p>
-                  <p className='text-xs text-gray-500'>{log.actor_label}</p>
-                </div>
-                <p className='text-xs text-gray-400'>{formatDateTime(log.created_at)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AuditTimeline logs={incident.audit_logs} />
       )}
     </div>
   )

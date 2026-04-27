@@ -1,0 +1,17 @@
+{
+  "urls": [
+    "https://secure-update-verify.com/login?id=3847",
+    "http://gov-portal-update.xyz/verify-account",
+    "https://defence-clearance-renewal.tk/submit"
+  ],
+  "texts": [
+    "URGENT: Your bank account has been compromised. Click here immediately to verify your identity: bit.ly/3xK9mQ2. Failure to respond within 24 hours will result in account suspension.",
+    "Dear Sir/Ma'am, This is from Army HQ IT Cell. Your email password expires today. Please update immediately at https://army-mail-reset.co/update to avoid service disruption. — IT Helpdesk"
+  ],
+  "files": [
+    {
+      "name": "sample_phishing_email.png",
+      "description": "Screenshot of a phishing email impersonating defence procurement"
+    }
+  ]
+}

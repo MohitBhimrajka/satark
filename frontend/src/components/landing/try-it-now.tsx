@@ -9,6 +9,7 @@ import { ResultCard } from '@/components/analysis/result-card'
 import api from '@/lib/api-client'
 import type { ThreatAnalysis } from '@/types'
 import { cn } from '@/lib/utils'
+import demoSamples from '@/data/demo-samples.json'
 
 const TABS = [
   { id: 'url', label: 'URL', icon: Link2 },
@@ -19,11 +20,6 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
-
-const DEMO_SAMPLES = {
-  url: 'https://secure-update-verify.com/login?id=3847',
-  text: 'URGENT: Your bank account has been compromised. Click here immediately to verify your identity: bit.ly/3xK9mQ2. Failure to respond within 24 hours will result in account suspension.',
-}
 
 interface QuickScanResult {
   analysis: ThreatAnalysis
@@ -76,8 +72,13 @@ export function TryItNow() {
   }
 
   const loadSample = () => {
-    if (activeTab === 'url') setInput(DEMO_SAMPLES.url)
-    else if (activeTab === 'text') setInput(DEMO_SAMPLES.text)
+    if (activeTab === 'url') {
+      const urls = demoSamples.urls
+      setInput(urls[Math.floor(Math.random() * urls.length)])
+    } else if (activeTab === 'text') {
+      const texts = demoSamples.texts
+      setInput(texts[Math.floor(Math.random() * texts.length)])
+    }
   }
 
   return (

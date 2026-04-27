@@ -1,36 +1,32 @@
 # Active Context
 
 ## Currently Working On
-Phase 3 (AI Analysis Pipeline) — **COMPLETE & FULLY AUDITED**. Ready to begin Phase 4 (Frontend Implementation).
+Phase 4 Frontend — COMPLETED. All 12 steps delivered and verified.
 
 ## Current State
-- **Database**: Unchanged from Phase 2 — 4 tables (users, incidents, evidence_files, audit_logs) + satark_case_seq.
-- **AI Pipeline**: Fully implemented in `app/services/ai/`:
-  - `client.py` — Gemini singleton with retry (exponential backoff on 429) + `asyncio.Semaphore(5)` + `generate_grounded()` for Google Search + URL Context
-  - `schemas.py` — Canonical `ThreatAnalysis` Pydantic model (re-exported from `app/schemas/analysis.py`)
-  - `prompts.py` — `SYSTEM_PROMPT_BASE` + 6 modality-specific prompt templates
-  - `orchestrator.py` — Routes incidents to correct analyzer, updates DB, handles errors → `analysis_failed` status
-  - `analyzers/` — 6 modules: text, URL (grounded with Google Search + URL Context), image, audio, video, document
-- **Background Tasks**: Incident creation now triggers `analyze_incident` via `BackgroundTasks`
-- **Quick Scan Endpoints**: `/api/analyze/text`, `/api/analyze/url`, `/api/analyze/file` (no auth, no DB write)
-- **Test Suite**: **45 tests passing** (26 Phase 2 + 19 Phase 3, all mocked — no real API calls needed)
-- **Docker**: Not yet re-verified with `make up` (services are currently down)
+- **Frontend:** 10 routes compiling, 0 lint errors, production build passes
+- **Backend:** 45 tests passing (Phase 2 + 3), AI pipeline with grounding
+- **Docker:** Full-stack containers operational (PostgreSQL + FastAPI + Next.js)
+- **Frontend Architecture:**
+  - Route groups: `(public)` (Navbar-only) and `(protected)` (Sidebar + Header + auth gate)
+  - Design system: Government-Modern, light mode, navy/threat tokens, shadow-soft
+  - State: SWR for data fetching, AuthContext for user/role state, usePolling for live analysis tracking
+  - Components: 15+ reusable UI components, 6 analysis display components, 5 landing sections, 4 incident components
 
 ## Immediate Next Steps
-1. **Phase 4 — Frontend**: Build Next.js pages with route groups, design system, and all views
-2. Key pages: landing, submit, case/:id, login, register (public) + dashboard, workbench, admin (protected)
-3. Implement `usePolling.ts` hook (poll `GET /api/incidents/:id` every 2s until `status != "analyzing"`)
-4. Build "Try It Now" section with pre-loaded demo samples (from `demo-samples.json`)
+1. **Phase 5: Integration & Polish** — PDF reports, websocket real-time updates, final UX refinements
+2. **Phase 6: Deployment** — Cloud Run, GCS storage, CI/CD pipeline, domain setup
 
 ## Blockers
-- GCP project ID unconfirmed — needed for Phase 6 deployment
-- Camera/mic require HTTPS — only testable on deployed URL
+- HTTPS required for browser camera/mic capture (TryItNow demo)
+- Quick-scan demo endpoints (/api/analyze/text, /url) need backend route implementation
 
-## Recent Changes (Final Phase 3 Audit — 2026-04-27)
-- Added `generate_grounded()` to client.py for structured output + Google Search grounding + URL Context tools
-- Upgraded URL analyzer to use Google Search + URL Context with fallback to standard analysis
-- Fixed potential `UnboundLocalError` in orchestrator.py (`incident = None` before try block)
-- Added 3 missing plan-required tests: orchestrator success, orchestrator failure, background task enqueue
-- Added URL analyzer fallback test (grounding failure → standard output)
-- Total: 19 Phase 3 tests, 45 full suite (all passing)
-- 12 atomic commits for Phase 3 (complete)
+## Recent Changes
+- [2026-04-27] Step 4.11: Admin page with user management table and role editing
+- [2026-04-27] Step 4.10: Workbench with search, filter, pagination, and analyst case detail
+- [2026-04-27] Step 4.9: Dashboard with 4 stat cards and 6 recharts charts
+- [2026-04-27] Step 4.8: Case detail with polling, analysis display, and audit trail
+- [2026-04-27] Step 4.7: Submit page with progressive 3-step form
+- [2026-04-27] Step 4.6: Login and register pages with form validation
+- [2026-04-27] Step 4.5: Full landing page (Hero, StatsBar, TryItNow, HowItWorks, Footer)
+- [2026-04-27] Steps 4.1-4.4: Design tokens, types, hooks, providers, layouts, shared UI components

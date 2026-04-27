@@ -11,40 +11,48 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface ReportDownloadButtonProps {
   incidentId: string
   caseNumber: string
+  /** Guest token for unauthenticated access */
+  guestToken?: string | null
 }
 
 export function ReportDownloadButton({
   incidentId,
   caseNumber,
+  guestToken,
 }: ReportDownloadButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const token = getToken()
+  const jwtToken = getToken()
 
-  if (!token) return null
+  // Must have either a JWT (logged in) or a guest token
+  if (!jwtToken && !guestToken) return null
 
   const handleDownload = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(
-        `${API_URL}/api/incidents/${incidentId}/report`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      const headers: HeadersInit = {}
+      let url = `${API_URL}/api/incidents/${incidentId}/report`
+
+      if (jwtToken) {
+        headers.Authorization = `Bearer ${jwtToken}`
+      } else if (guestToken) {
+        url += `?token=${encodeURIComponent(guestToken)}`
+      }
+
+      const response = await fetch(url, { headers })
 
       if (!response.ok) {
         throw new Error('Failed to generate report')
       }
 
       const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
+      const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url
+      a.href = blobUrl
       a.download = `satark-${caseNumber}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      URL.revokeObjectURL(blobUrl)
       toast.success('Report downloaded')
     } catch {
       toast.error('Failed to generate report. Please try again.')

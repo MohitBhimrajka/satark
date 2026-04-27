@@ -40,14 +40,14 @@ router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
 @router.get(
     "/{incident_id}/report",
-    dependencies=[Depends(require_role("analyst", "admin"))],
 )
 def download_report(
     incident_id: uuid.UUID,
-    user: User = Depends(get_current_user),
+    token: str | None = Query(None),
+    user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
-    """Download a PDF report for an incident. Analyst+ only."""
+    """Download a PDF report for an incident. Guest with token or analyst+."""
     from fastapi.responses import Response
 
     incident = incident_service.get_incident(incident_id, db)
@@ -57,6 +57,17 @@ def download_report(
             detail="Incident not found",
         )
 
+    # Authorize: analyst/admin OR guest with matching token
+    if user and user.role in ("analyst", "admin"):
+        pass  # Authorized
+    elif token and incident.guest_token == token:
+        pass  # Guest with valid token
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Provide a valid token or authenticate.",
+        )
+
     pdf_bytes = generate_report(incident)
 
     # Log the report generation in the audit trail
@@ -64,8 +75,8 @@ def download_report(
         db=db,
         action="report_generated",
         incident_id=incident.id,
-        user_id=user.id,
-        actor_label=user.display_name,
+        user_id=user.id if user else None,
+        actor_label=user.display_name if user else "Guest",
         details={"format": "pdf"},
     )
     db.commit()

@@ -82,10 +82,11 @@ export default function CaseDetailPage() {
               {incident.priority.toUpperCase()}
             </Badge>
           )}
-          {isAnalyst && (
+          {analysis && !isAnalyzing && (
             <ReportDownloadButton
               incidentId={incidentId}
               caseNumber={incident.case_number}
+              guestToken={token}
             />
           )}
         </div>

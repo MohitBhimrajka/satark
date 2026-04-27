@@ -1,7 +1,7 @@
 # Active Context
 
 ## Currently Working On
-All 6 phases complete + documentation finalized. Project is production-ready.
+All 6 phases complete. GitHub Wiki documentation fully authored and published.
 
 ## Current State
 - **Backend:** `https://satark-backend-1094555524365.asia-south1.run.app` — HEALTHY
@@ -11,22 +11,25 @@ All 6 phases complete + documentation finalized. Project is production-ready.
 - **GCS Bucket:** `gs://satark-evidence/`
 - **Secrets:** 6/6 in Secret Manager
 - **Users:** admin@satark.gov.in (admin), analyst@satark.gov.in (analyst)
-- **README:** Fully rewritten with architecture, API routes, live URLs
-- **deployment/README.md:** Complete Cloud Run setup guide added
-- **`.env.example`:** Synced with all settings.py variables
-- **`docs/AGENT_SYSTEM_PROMPT.md`:** Removed (internal artifact)
-- **Commits:** 111 atomic commits
+- **Commits:** 112+ atomic commits
+- **Wiki:** 14 pages + sidebar + footer + 10 images — LIVE at github.com/MohitBhimrajka/satark/wiki
+
+## Wiki Status
+- **Pages complete:** Home, Introduction, Objectives-and-Scope, Literature-Survey, System-Architecture, Technologies-Used, Methodology, Implementation, Results, Challenges, Future-Scope, Conclusion, References, Demo
+- **Images:** 4 generated diagrams (architecture, AI pipeline, ER, data flow) + 6 live screenshots (landing, try-it-now, login, dashboard, workbench, admin)
+- **Polish:** All emojis removed from headings/sidebar/footer, Hardware section added, Database Schema section added
 
 ## Immediate Next Steps
 1. Seed production database with 20 demo incidents (requires Cloud SQL Proxy)
-2. Optional: CI/CD Cloud Build trigger on push to main
-3. Add real screenshots to README once demo data is seeded
+2. Optional: Record a video demo and add YouTube link to Demo wiki page
+3. Optional: CI/CD Cloud Build trigger on push to main
 
 ## Blockers
 None
 
-## Recent Changes (2026-04-27 — Final Documentation Pass)
-1. **README.md:** Complete rewrite — Satark description, architecture diagram, tech stack, API routes, local dev, deployment, project structure, env vars table
-2. **`.env.example`:** Added missing `AI_CONCURRENCY_LIMIT=5`
-3. **`docs/AGENT_SYSTEM_PROMPT.md`:** Deleted (internal development artifact)
-4. **`deployment/README.md`:** Created — 7-step Cloud Run deployment guide with troubleshooting
+## Recent Changes (2026-04-27 — Wiki Documentation)
+1. **Wiki pages:** All 14 pages authored and published to GitHub Wiki
+2. **Diagrams:** 4 professional diagrams generated (architecture, pipeline, ER, DFD)
+3. **Screenshots:** 6 live screenshots captured from production site
+4. **Polish:** Emojis removed, Hardware section added, DB Schema section added
+5. **README.md + deployment/README.md:** Already complete from prior session

@@ -37,13 +37,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — restrict in production via FRONTEND_URL env var
+# CORS — restrict in production via FRONTEND_URL env var (comma-separated for multiple origins)
 import os
 
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = [u.strip() for u in frontend_url.split(",") if u.strip()]
+allowed_origins.append("http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

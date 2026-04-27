@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Shield, UserPlus, Loader2, Check, X } from 'lucide-react'
@@ -9,6 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiClientError } from '@/lib/api-client'
 import toast from 'react-hot-toast'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { cn } from '@/lib/utils'
 
 const PASSWORD_RULES = [
@@ -17,36 +19,51 @@ const PASSWORD_RULES = [
   { label: 'Contains uppercase', test: (p: string) => /[A-Z]/.test(p) },
 ]
 
+const registerSchema = z.object({
+  displayName: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/\d/, 'Password must contain a number')
+    .regex(/[A-Z]/, 'Password must contain an uppercase letter'),
+})
+
+type RegisterForm = z.infer<typeof registerSchema>
+
 export default function RegisterPage() {
   const router = useRouter()
-  const { register } = useAuth()
-  const [displayName, setDisplayName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { register: authRegister } = useAuth()
 
+  const {
+    register: registerField,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { displayName: '', email: '', password: '' },
+    mode: 'onChange',
+  })
+
+  const password = watch('password', '')
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: RegisterForm) => {
     if (!isPasswordValid) return
-    setError('')
-    setIsLoading(true)
 
     try {
-      await register(email, password, displayName)
+      await authRegister(data.email, data.password, data.displayName)
       toast.success('Account created!')
       router.push('/dashboard')
     } catch (err) {
       if (err instanceof ApiClientError) {
-        setError(err.message)
+        setError('root', { message: err.message })
       } else {
-        setError('An unexpected error occurred.')
+        setError('root', { message: 'An unexpected error occurred.' })
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -67,66 +84,55 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Error */}
-          {error && (
+          {/* Root Error */}
+          {errors.root && (
             <div className='mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700'>
-              {error}
+              {errors.root.message}
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className='space-y-4'>
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
             <div className='space-y-1.5'>
-              <label
-                htmlFor='displayName'
-                className='text-sm font-medium text-gray-700'
-              >
+              <label htmlFor='displayName' className='text-sm font-medium text-gray-700'>
                 Display Name
               </label>
               <Input
                 id='displayName'
                 type='text'
                 placeholder='Your name'
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                minLength={2}
-                maxLength={100}
                 autoFocus
+                {...registerField('displayName')}
               />
+              {errors.displayName && (
+                <p className='text-xs text-red-500'>{errors.displayName.message}</p>
+              )}
             </div>
 
             <div className='space-y-1.5'>
-              <label
-                htmlFor='email'
-                className='text-sm font-medium text-gray-700'
-              >
+              <label htmlFor='email' className='text-sm font-medium text-gray-700'>
                 Email
               </label>
               <Input
                 id='email'
                 type='email'
                 placeholder='analyst@satark.mil'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                {...registerField('email')}
               />
+              {errors.email && (
+                <p className='text-xs text-red-500'>{errors.email.message}</p>
+              )}
             </div>
 
             <div className='space-y-1.5'>
-              <label
-                htmlFor='password'
-                className='text-sm font-medium text-gray-700'
-              >
+              <label htmlFor='password' className='text-sm font-medium text-gray-700'>
                 Password
               </label>
               <Input
                 id='password'
                 type='password'
                 placeholder='Min 8 characters'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...registerField('password')}
               />
               {/* Password strength */}
               {password.length > 0 && (
@@ -176,14 +182,14 @@ export default function RegisterPage() {
             <Button
               type='submit'
               className='w-full'
-              disabled={isLoading || !isPasswordValid}
+              disabled={isSubmitting || !isPasswordValid}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : (
                 <UserPlus className='mr-2 h-4 w-4' strokeWidth={1.5} />
               )}
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isSubmitting ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
 

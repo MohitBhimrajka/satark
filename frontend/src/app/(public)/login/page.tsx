@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Shield, LogIn, Loader2 } from 'lucide-react'
@@ -9,32 +8,42 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiClientError } from '@/lib/api-client'
 import toast from 'react-hot-toast'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
   const { login } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
+  const onSubmit = async (data: LoginForm) => {
     try {
-      await login(email, password)
+      await login(data.email, data.password)
       toast.success('Welcome back!')
       router.push('/dashboard')
     } catch (err) {
       if (err instanceof ApiClientError) {
-        setError(err.message)
+        setError('root', { message: err.message })
       } else {
-        setError('An unexpected error occurred.')
+        setError('root', { message: 'An unexpected error occurred.' })
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -53,15 +62,15 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Error */}
-          {error && (
+          {/* Root Error */}
+          {errors.root && (
             <div className='mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700'>
-              {error}
+              {errors.root.message}
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className='space-y-4'>
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
             <div className='space-y-1.5'>
               <label htmlFor='email' className='text-sm font-medium text-gray-700'>
                 Email
@@ -70,11 +79,12 @@ export default function LoginPage() {
                 id='email'
                 type='email'
                 placeholder='analyst@satark.mil'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
                 autoFocus
+                {...registerField('email')}
               />
+              {errors.email && (
+                <p className='text-xs text-red-500'>{errors.email.message}</p>
+              )}
             </div>
 
             <div className='space-y-1.5'>
@@ -85,20 +95,20 @@ export default function LoginPage() {
                 id='password'
                 type='password'
                 placeholder='Min 8 characters'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
+                {...registerField('password')}
               />
+              {errors.password && (
+                <p className='text-xs text-red-500'>{errors.password.message}</p>
+              )}
             </div>
 
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? (
+            <Button type='submit' className='w-full' disabled={isSubmitting}>
+              {isSubmitting ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : (
                 <LogIn className='mr-2 h-4 w-4' strokeWidth={1.5} />
               )}
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 

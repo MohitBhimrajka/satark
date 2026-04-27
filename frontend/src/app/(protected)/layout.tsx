@@ -42,7 +42,7 @@ export default function ProtectedLayout({
         style={{ marginLeft: 'var(--sidebar-width, 260px)' }}
       >
         <Header />
-        <main className='flex-1 bg-gray-50 p-6 lg:p-8'>
+        <main id='main-content' className='flex-1 bg-gray-50 p-6 lg:p-8'>
           <PageTransition>{children}</PageTransition>
         </main>
       </div>

@@ -12,8 +12,9 @@ import { EvidenceList } from '@/components/incidents/evidence-list'
 import { AuditTimeline } from '@/components/incidents/audit-timeline'
 import { AnalystControls } from '@/components/incidents/analyst-controls'
 import { ReportDownloadButton } from '@/components/incidents/report-download-button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatDateTime } from '@/lib/utils'
-import { Clock } from 'lucide-react'
+import { Clock, AlertTriangle } from 'lucide-react'
 import type { ThreatAnalysis, Priority, IncidentStatus } from '@/types'
 
 export default function CaseDetailPage() {
@@ -107,14 +108,12 @@ export default function CaseDetailPage() {
 
       {/* Analysis failed */}
       {incident.status === 'analysis_failed' && (
-        <div className='rounded-xl border border-red-200 bg-red-50 p-6 text-center'>
-          <h3 className='text-base font-semibold text-red-700'>
-            Analysis Failed
-          </h3>
-          <p className='mt-1 text-sm text-red-600'>
-            The AI engine was unable to analyze this content. An analyst will review it manually.
-          </p>
-        </div>
+        <EmptyState
+          icon={AlertTriangle}
+          title='AI analysis encountered an error'
+          description='The AI engine was unable to analyze this content. An analyst will review it manually.'
+          className='border-red-200 bg-red-50/50'
+        />
       )}
 
       {/* Analyst Controls — only for authenticated analysts */}

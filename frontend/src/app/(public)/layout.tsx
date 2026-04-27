@@ -11,7 +11,7 @@ export default function PublicLayout({
   return (
     <>
       <Navbar />
-      <main>
+      <main id='main-content'>
         <PageTransition>{children}</PageTransition>
       </main>
     </>

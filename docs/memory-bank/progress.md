@@ -125,6 +125,13 @@
 - [x] CORS verified: frontend origin allowed by backend
 - [x] Health check: `{"status": "healthy", "service": "satark-api"}`
 
+## Completed — Final Documentation (2026-04-27)
+- [x] README.md: Full rewrite — architecture, API routes, live URLs, local dev, deployment
+- [x] .env.example: Synced with all settings.py variables (added AI_CONCURRENCY_LIMIT)
+- [x] docs/AGENT_SYSTEM_PROMPT.md: Removed (internal development artifact)
+- [x] deployment/README.md: Created — 7-step Cloud Run deployment guide
+
 ## Planned
-- [ ] CI/CD: Cloud Build trigger on push to main (optional, Step 11)
-- [ ] Production database seeding (demo incidents)
+- [ ] CI/CD: Cloud Build trigger on push to main (optional)
+- [ ] Production database seeding (20 demo incidents via Cloud SQL Proxy)
+

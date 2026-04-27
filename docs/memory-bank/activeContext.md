@@ -1,32 +1,32 @@
 # Active Context
 
 ## Currently Working On
-Phase 6: Deployment — **LIVE IN PRODUCTION** ✅ (Post-deployment bug fixes complete)
+All 6 phases complete + documentation finalized. Project is production-ready.
 
 ## Current State
 - **Backend:** `https://satark-backend-1094555524365.asia-south1.run.app` — HEALTHY
-- **Frontend:** `https://satark-frontend-1094555524365.asia-south1.run.app` — SERVING (rev 00004)
+- **Frontend:** `https://satark-frontend-1094555524365.asia-south1.run.app` — SERVING
 - **GCP Project:** `satark-sih-2025` (billing: Pioneer)
 - **Cloud SQL:** `satark-postgres` (PostgreSQL 15, asia-south1, RUNNABLE)
 - **GCS Bucket:** `gs://satark-evidence/`
-- **Secrets:** 6/6 in Secret Manager, all bound to Cloud Run SA
-- **Users:** admin@satark.gov.in (admin, pw: Admin@123), analyst@satark.gov.in (analyst, pw: Analyst@123)
-- **Incidents:** 2 test incidents submitted and analyzed by AI
-- CORS configured and verified
+- **Secrets:** 6/6 in Secret Manager
+- **Users:** admin@satark.gov.in (admin), analyst@satark.gov.in (analyst)
+- **README:** Fully rewritten with architecture, API routes, live URLs
+- **deployment/README.md:** Complete Cloud Run setup guide added
+- **`.env.example`:** Synced with all settings.py variables
+- **`docs/AGENT_SYSTEM_PROMPT.md`:** Removed (internal artifact)
+- **Commits:** 111 atomic commits
 
 ## Immediate Next Steps
-1. **Hard refresh frontend** (Cmd+Shift+R) and test all flows visually
-2. Seed more demo incidents for a fuller dashboard presentation
-3. Optional: CI/CD trigger setup
+1. Seed production database with 20 demo incidents (requires Cloud SQL Proxy)
+2. Optional: CI/CD Cloud Build trigger on push to main
+3. Add real screenshots to README once demo data is seeded
 
 ## Blockers
 None
 
-## Recent Changes (Post-Deployment Fixes — 2026-04-27)
-1. **try-it-now.tsx:** Fixed `res.analysis` → `res.data.analysis` (data envelope unwrap)
-2. **api-client.ts:** Rewritten error parsing for FastAPI's `{detail: string}` format (was `{error: {message}}`)
-3. **submit-form.tsx:** Changed from JSON POST to FormData for ALL submissions (backend uses `Form()` params, not JSON body)
-4. **dashboard-view.tsx:** Fixed stats + chart fetching to unwrap `ApiResponse<T>` envelope
-5. **chart-a/c/e:** Fixed all 3 chart components to unwrap data envelope
-6. **Database:** Seeded admin + analyst users, promoted admin via direct DB access
-7. **Security:** Cleared temporary IP whitelist from Cloud SQL
+## Recent Changes (2026-04-27 — Final Documentation Pass)
+1. **README.md:** Complete rewrite — Satark description, architecture diagram, tech stack, API routes, local dev, deployment, project structure, env vars table
+2. **`.env.example`:** Added missing `AI_CONCURRENCY_LIMIT=5`
+3. **`docs/AGENT_SYSTEM_PROMPT.md`:** Deleted (internal development artifact)
+4. **`deployment/README.md`:** Created — 7-step Cloud Run deployment guide with troubleshooting

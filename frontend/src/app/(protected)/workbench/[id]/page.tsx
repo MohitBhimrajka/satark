@@ -11,6 +11,7 @@ import { AnalyzingState } from '@/components/analysis/analyzing-state'
 import { EvidenceList } from '@/components/incidents/evidence-list'
 import { AuditTimeline } from '@/components/incidents/audit-timeline'
 import { AnalystControls } from '@/components/incidents/analyst-controls'
+import { ReportDownloadButton } from '@/components/incidents/report-download-button'
 import { formatDateTime } from '@/lib/utils'
 import { usePolling } from '@/hooks/usePolling'
 import Link from 'next/link'
@@ -74,6 +75,10 @@ export default function WorkbenchDetailPage() {
         title={incident.case_number}
         actions={
           <div className='flex items-center gap-2'>
+            <ReportDownloadButton
+              incidentId={incidentId}
+              caseNumber={incident.case_number}
+            />
             <StatusBadge status={incident.status} />
             {incident.priority && (
               <Badge variant={incident.priority as Priority}>

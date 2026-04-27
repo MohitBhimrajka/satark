@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EvidenceList } from '@/components/incidents/evidence-list'
 import { AuditTimeline } from '@/components/incidents/audit-timeline'
 import { AnalystControls } from '@/components/incidents/analyst-controls'
+import { ReportDownloadButton } from '@/components/incidents/report-download-button'
 import { formatDateTime } from '@/lib/utils'
 import { Clock } from 'lucide-react'
 import type { ThreatAnalysis, Priority, IncidentStatus } from '@/types'
@@ -79,6 +80,12 @@ export default function CaseDetailPage() {
             <Badge variant={incident.priority as Priority}>
               {incident.priority.toUpperCase()}
             </Badge>
+          )}
+          {isAnalyst && (
+            <ReportDownloadButton
+              incidentId={incidentId}
+              caseNumber={incident.case_number}
+            />
           )}
         </div>
         <div className='flex items-center gap-4 text-sm text-gray-500'>

@@ -1,584 +1,342 @@
-# Full-Stack Web Application Template
+# Satark (सतर्क) — AI-Powered Cyber Incident Intelligence Portal
 
-A production-ready template for building modern web applications featuring a Python/FastAPI backend, Next.js/React frontend, and PostgreSQL database. All services are containerized with Docker for consistent development across platforms.
+> **Smart India Hackathon 2025** | Problem Statement ID: **25210**
+>
+> An AI-powered portal for defence personnel to submit, analyze, and respond to cyber incidents and suspicious digital content — with automated threat classification, IOC extraction, and mitigation playbook generation.
 
-## Features
+---
 
-- **Production-Ready Stack**: FastAPI, Next.js, and PostgreSQL working together
-- **Single-Command Deployment**: Deploy to Google Cloud Run with `./deployment/gcloud-deploy.sh`
-- **Cross-Platform Compatibility**: Works on Windows, macOS, and Linux  
-- **Clean Architecture**: Simplified codebase without authentication complexity
-- **Containerized Development**: Docker and Docker Compose for consistent environments
-- **Multiple Setup Options**: Docker, local development, or hybrid approaches
-- **Developer Experience**: Code formatting, linting, and database migrations included
-- **Health Monitoring**: Built-in health checks and monitoring for production environments
+## Live Demo
 
-## Technology Stack
+| Service | URL |
+|---------|-----|
+| 🌐 Frontend | [satark-frontend-1094555524365.asia-south1.run.app](https://satark-frontend-1094555524365.asia-south1.run.app) |
+| ⚙️ Backend API | [satark-backend-1094555524365.asia-south1.run.app](https://satark-backend-1094555524365.asia-south1.run.app) |
+| 📖 API Docs | [/docs](https://satark-backend-1094555524365.asia-south1.run.app/docs) |
+| ❤️ Health | [/health](https://satark-backend-1094555524365.asia-south1.run.app/health) |
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Backend   | Python 3.11 with FastAPI | High-performance API development |
-| Frontend  | Next.js 15 with React 19 & TypeScript | Modern user interface framework |
-| Database  | PostgreSQL 15 / SQLite | Reliable relational database |
-| DevOps    | Docker & Docker Compose | Containerization and orchestration |
-| Deployment | Google Cloud Run | Serverless production hosting |
-| Migrations | Alembic | Database schema management |
-| Monitoring | Cloud Run Logging | Production observability |
+**Demo Credentials:**
 
-## Prerequisites
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@satark.gov.in` | `Admin@123` |
+| Analyst | `analyst@satark.gov.in` | `Analyst@123` |
 
-Choose your preferred development approach:
+---
 
-### Option A: Docker Development (Recommended)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) (Windows/Mac) or Docker Engine (Linux)
+## What It Does
+
+1. **Guest submits suspicious content** — a phishing SMS, malicious URL, suspicious image, audio recording, video clip, or document
+2. **AI analyzes the content** — classifies the threat, scores severity (0–100), extracts IOCs (IPs, domains, hashes), and generates a step-by-step mitigation playbook
+3. **Analyst triages from the workbench** — views AI results, adds notes, changes status, escalates, downloads PDF reports
+4. **Admin monitors the dashboard** — 6 analytics charts showing threat distribution, severity trends, geographic origin, and more
+
+All analysis is asynchronous — submissions return immediately while the AI processes in the background. The frontend polls every 2 seconds until results are ready.
+
+---
+
+## Architecture
+
+```
+┌─────────────┐     HTTPS      ┌──────────────────┐
+│  Next.js 15  │◄──────────────►│   FastAPI 3.11   │
+│  (React 19)  │   REST API    │   (Gunicorn)     │
+│  Cloud Run   │               │   Cloud Run      │
+└─────────────┘               └────────┬─────────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+              ┌─────▼─────┐   ┌───────▼───────┐  ┌──────▼──────┐
+              │ Cloud SQL  │   │ AI Service    │  │    GCS      │
+              │ PostgreSQL │   │ (Gemini 3     │  │  Evidence   │
+              │    15      │   │  Flash)       │  │  Storage    │
+              └───────────┘   └───────────────┘  └─────────────┘
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Backend | Python 3.11 + FastAPI | REST API, async analysis orchestration |
+| Frontend | Next.js 15 + React 19 + TypeScript | App Router, server/client components |
+| Database | PostgreSQL 15 + SQLAlchemy 2.x + Alembic | ORM, migrations, case number sequences |
+| AI | Google GenAI SDK + Gemini 3 Flash | 6-modality threat analysis with structured output |
+| Auth | PyJWT + bcrypt | JWT tokens, role-based access (guest/analyst/admin) |
+| Storage | Google Cloud Storage | Evidence files, SHA-256 checksums |
+| Reports | ReportLab | Branded 9-section PDF threat reports |
+| Styling | Tailwind CSS + Framer Motion + Radix UI | Animations, accessible components |
+| Charts | Recharts 3 | 6 dashboard chart types |
+| Deployment | Google Cloud Run + Cloud SQL + GCS + Secret Manager | Serverless, auto-scaling |
+
+---
+
+## AI Analysis Pipeline
+
+Satark supports **6 input modalities**, each with a specialized analyzer:
+
+| Input Type | What It Analyzes | Special Features |
+|-----------|------------------|------------------|
+| **Text** | SMS, email, chat messages | Phishing pattern detection |
+| **URL** | Websites, links | Google Search grounding + URL Context (visits the page) |
+| **Image** | Screenshots, photos | OCR + visual analysis |
+| **Audio** | Voice recordings, calls | Speech-to-text + intent analysis |
+| **Video** | Screen recordings, clips | Frame analysis + audio extraction |
+| **Document** | PDFs, Word, Excel | Content extraction + embedded threat detection |
+
+Every analysis returns a structured `ThreatAnalysis` result:
+
+```json
+{
+  "classification": "phishing",
+  "threat_score": 85,
+  "confidence": 0.92,
+  "summary": "This SMS contains a phishing attempt...",
+  "indicators": ["suspicious-domain.com", "185.234.x.x"],
+  "mitigation_steps": ["Do not click the link", "Block the sender", "..."],
+  "risk_factors": ["Urgency language", "Suspicious domain", "..."]
+}
+```
+
+---
+
+## API Routes
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/incidents` | None | Submit incident (guest mode) |
+| `GET` | `/api/incidents` | analyst+ | List with filters + pagination |
+| `GET` | `/api/incidents/:id` | guest_token or analyst+ | Get incident detail |
+| `PATCH` | `/api/incidents/:id` | analyst+ | Update status/notes |
+| `GET` | `/api/incidents/:id/report` | guest_token or analyst+ | Download PDF report |
+| `POST` | `/api/analyze/url` | None | Quick URL scan (no DB) |
+| `POST` | `/api/analyze/text` | None | Quick text scan (no DB) |
+| `POST` | `/api/analyze/file` | None | Quick file scan (no DB) |
+| `GET` | `/api/dashboard/stats` | analyst+ | Platform statistics |
+| `GET` | `/api/dashboard/charts/:type` | analyst+ | Chart data (types A–F) |
+| `POST` | `/api/auth/register` | None | Register new user |
+| `POST` | `/api/auth/login` | None | Login → JWT token |
+| `GET` | `/api/auth/me` | authenticated | Current user profile |
+| `GET` | `/api/admin/users` | admin | List all users |
+| `GET` | `/api/admin/stats` | admin | Admin statistics |
+| `PATCH` | `/api/admin/users/:id` | admin | Update user role |
+| `GET` | `/health` | None | Health check |
+
+All responses follow a standard envelope:
+
+```json
+// Success
+{ "data": { ... }, "message": "..." }
+
+// Error
+{ "error": { "code": "NOT_FOUND", "message": "...", "details": [] } }
+```
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (required)
 - [Git](https://git-scm.com/downloads)
 
-### Option B: Local Development
-- [Python 3.8+](https://www.python.org/downloads/)
-- [Node.js 18+](https://nodejs.org/en/download/)
-- [PostgreSQL 15+](https://www.postgresql.org/download/) (or Docker for database only)
-- [Git](https://git-scm.com/downloads)
-
-## Quick Start
-
-### 1. Clone and Setup
+### Quick Start
 
 ```bash
-git clone <repository-url>
-cd template
+# 1. Clone
+git clone https://github.com/YOUR_USERNAME/satark.git
+cd satark
+
+# 2. Configure environment
 cp .env.example .env
-```
+# Edit .env — add your GEMINI_API_KEY
 
-### 2. Choose Your Setup Method
-
-#### Option A: Production Deployment (Google Cloud)
-
-Deploy directly to Google Cloud Run:
-
-```bash
-# Set up production environment
-cp deployment/prod.example.env deployment/.env.prod
-# Edit .env.prod with your Google Cloud project settings
-
-# Deploy to Google Cloud Run
-./deployment/gcloud-deploy.sh
-```
-
-#### Option B: Local Development
-
-Choose your preferred local development method:
-
-#### Method B1: Full Docker Setup (Recommended for Local)
-
-**Windows (Command Prompt/PowerShell):**
-```cmd
-docker-compose up --build -d
-```
-
-**Windows (without make):**
-```cmd
-REM Start services
-docker-compose up --build -d
-
-REM View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-REM Stop services
-docker-compose down
-```
-
-**macOS/Linux:**
-```bash
+# 3. Start all services
 make up
+
+# 4. Access
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+# API Docs:  http://localhost:8000/docs
 ```
 
-#### Method B2: Local Development Setup (Manual)
-
-**Manual setup:**
-
-1. **Backend Setup:**
-   ```bash
-   # Create virtual environment
-   python -m venv venv
-   
-   # Activate (Windows)
-   venv\Scripts\activate
-   
-   # Activate (macOS/Linux)
-   source venv/bin/activate
-   
-   # Install dependencies
-   pip install -r packages/requirements.txt
-   ```
-
-2. **Frontend Setup:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-3. **Database Setup** (choose one):
-   - Local PostgreSQL installation
-   - Docker database only: `docker run --name postgres -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres:15`
-   - Managed service (AWS RDS, Google Cloud SQL, etc.)
-
-4. **Configuration:**
-   Edit `.env` file with your database connection details.
-
-5. **Database Migration:**
-   ```bash
-   alembic upgrade head
-   ```
-
-## Production Database Migrations
-
-### Automatic Migration on Startup
-
-**Production Ready**: Database migrations run automatically when the application starts, ensuring your database schema is always up-to-date without manual intervention.
-
-**How it works:**
-1. Application starts and waits for database connection
-2. Runs `alembic upgrade head` to apply any pending migrations  
-3. Starts the web server (Gunicorn)
-
-**Safety Features:**
-- **Non-destructive**: Only applies new migrations, never destroys existing data
-- **Timeout protection**: Migrations timeout after 10 minutes in production
-- **Error handling**: Application fails to start if migrations fail
-- **Logging**: Comprehensive logging of migration status and errors
-
-### Migration Management Tools
-
-Use the production-safe migration utilities:
+### Development Commands
 
 ```bash
-# Check current migration status
-python scripts/migration_utils.py status
+# ── Services ───────────────────────────────────
+make up                # Start postgres + backend + frontend
+make down              # Stop all services
+make logs-be           # Tail backend logs
+make logs-fe           # Tail frontend logs
+make restart-be        # Restart backend only
+make restart-fe        # Restart frontend only
 
-# View migration history  
-python scripts/migration_utils.py history
+# ── Database ───────────────────────────────────
+make reset-db          # Wipe and re-init
+make seed              # Seed baseline data (admin + analyst users)
+make seed-demo         # Seed 20 demo incidents for presentation
+make migrate-create MSG='description'  # Create new Alembic migration
+make migrate-up        # Apply all pending migrations
+make migrate-down      # Rollback one migration
+make migrate-history   # Show migration chain
 
-# Check for pending migrations
-python scripts/migration_utils.py pending
+# ── Code Quality ───────────────────────────────
+make format            # Format Python (black+isort) + JS (prettier)
+make lint              # Lint Python (flake8) + JS (eslint)
+make test-be           # Run backend tests (pytest)
 
-# Validate migration files
-python scripts/migration_utils.py validate
-
-# View database connection info
-python scripts/migration_utils.py info
-
-# Manually apply migrations (with confirmation in production)
-python scripts/migration_utils.py apply
+# ── Deployment ─────────────────────────────────
+make deploy            # Deploy both services to Cloud Run
+make deploy-backend    # Deploy backend only
+make deploy-frontend   # Deploy frontend only
+make deploy-status     # Show Cloud Run service status
+make setup-secrets     # Create Secret Manager secrets (interactive)
 ```
 
-### Creating New Migrations
-
-```bash
-# Auto-generate migration from model changes
-alembic revision --autogenerate -m "Add user profiles table"
-
-# Create empty migration for manual changes  
-alembic revision -m "Add custom indexes"
-
-# Review the generated migration file before committing
-```
-
-### Production Migration Best Practices
-
-1. **Test migrations locally** before deploying to production
-2. **Review auto-generated migrations** - Alembic may not catch everything  
-3. **Backup database** before major schema changes
-4. **Use blue-green deployments** for zero-downtime schema changes
-5. **Monitor migration performance** - some changes can be slow on large tables
-
-### Emergency Migration Rollback
-
-```bash
-# Rollback to previous migration
-alembic downgrade -1
-
-# Rollback to specific revision  
-alembic downgrade <revision_id>
-
-# View downgrade SQL without executing
-alembic downgrade -1 --sql
-```
-
-6. **Start Services:**
-   ```bash
-   # Terminal 1: Backend
-   uvicorn app.main:app --reload --port 8001
-   
-   # Terminal 2: Frontend
-   cd frontend
-   npm run dev
-   ```
-
-### 3. Access Your Application
-
-- **Frontend**: http://localhost:3001
-- **Backend API Documentation**: http://localhost:8001/docs
-
-## Development Commands
-
-### Docker-based Development
-
-**Using make (macOS/Linux):**
-```bash
-make up          # Start all services
-make down        # Stop all services
-make logs-be     # View backend logs
-make logs-fe     # View frontend logs
-make format      # Format code
-make lint        # Lint code
-make test-be     # Run backend tests
-```
-
-**Without make (Windows or other systems):**
-Use docker-compose commands directly:
-```bash
-docker-compose up --build -d     # Start services
-docker-compose down              # Stop services  
-docker-compose logs -f backend   # View backend logs
-docker-compose logs -f frontend  # View frontend logs
-```
-
-### Local Development
-
-**Backend commands:**
-```bash
-# Activate virtual environment first
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate     # Windows
-
-# Database migrations
-alembic upgrade head      # Apply migrations
-alembic downgrade -1      # Rollback one migration
-alembic history          # View migration history
-
-# Code quality
-black app/               # Format code
-isort app/               # Sort imports
-flake8 app/              # Lint code
-
-# Testing
-pytest tests/            # Run tests
-
-# Start development server
-uvicorn app.main:app --reload --port 8001
-```
-
-**Frontend commands:**
-```bash
-cd frontend
-
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Lint code
-npm run format           # Format code
-```
-
-## Utility Scripts
-
-### Project Digest Generation
-
-The `make_ingest.py` script helps generate comprehensive project digests using [gitingest](https://github.com/cyclotruc/gitingest). This is useful for:
-
-- Creating project summaries for AI analysis
-- Generating documentation snapshots
-- Code review preparation
-
-**Usage:**
-```bash
-# Generate digest of current directory
-python make_ingest.py .
-
-# Generate digest with custom output file
-python make_ingest.py . my_project_digest.txt
-
-# Generate digest excluding additional file types
-python make_ingest.py . .log .tmp .backup
-```
-
-The script automatically excludes common non-essential files (node_modules, __pycache__, build artifacts, etc.) to focus on the core source code.
-
-## Environment Configuration
-
-The `.env` file contains all configuration. Copy `.env.example` to `.env` and customize as needed.
-
-### Core Variables (Required)
-
-```bash
-# Application Environment
-APP_ENV=development          # development, staging, production
-BASE_PATH=                   # Optional subpath for reverse proxy
-LOG_LEVEL=INFO              # DEBUG, INFO, WARNING, ERROR, CRITICAL
-
-# Backend URLs and Ports
-FRONTEND_URL=http://localhost:3001${BASE_PATH}
-PORT=8000                   # Backend server port
-INTERNAL_IP=0.0.0.0         # Server binding IP
-
-# Frontend URLs
-NEXT_PUBLIC_API_URL=http://localhost:8001
-NEXT_PUBLIC_BASE_PATH=${BASE_PATH}
-INTERNAL_API_URL=http://backend:8000  # Container-to-container communication
-
-# Database Connection
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-POSTGRES_DB=app_db
-POSTGRES_HOST=postgres      # Use 'localhost' for local PostgreSQL
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-```
-
-### Production Variables (Optional)
-
-```bash
-# Production Server Configuration
-GUNICORN_LOG_LEVEL=info     # Gunicorn-specific logging
-WORKER_CONNECTIONS=1000     # Max connections per worker
-GUNICORN_TIMEOUT=120        # Request timeout in seconds
-# WEB_CONCURRENCY=1         # Number of worker processes
-
-# Database Utilities
-SKIP_DB_WAIT=false          # Skip database connection wait during startup
-```
-
-The `.env.example` file contains only the essential variables currently used by the application. Add additional environment variables as needed when implementing new features.
-
-## Database Options
-
-### Option 1: Docker Database (Recommended for Development)
-```bash
-docker run --name postgres \
-  -e POSTGRES_USER=user \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=app_db \
-  -p 5432:5432 \
-  -d postgres:15
-```
-
-### Option 2: Local PostgreSQL Installation
-
-**Windows:**
-1. Download from https://www.postgresql.org/download/windows/
-2. Install and set password for postgres user
-3. Create database: `createdb app_db`
-
-**macOS:**
-```bash
-brew install postgresql@15
-brew services start postgresql@15
-createdb app_db
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get install postgresql-15 postgresql-contrib
-sudo -u postgres createdb app_db
-```
-
-### Option 3: Managed Database Services
-- **AWS RDS**: Use PostgreSQL engine
-- **Google Cloud SQL**: PostgreSQL instance
-- **Azure Database**: PostgreSQL service
-- **Digital Ocean**: Managed PostgreSQL
-
-Update `DATABASE_URL` in `.env` with your connection string.
+---
 
 ## Project Structure
 
 ```
-.
-├── app/                     # Python/FastAPI backend application
-│   ├── core/               # Core utilities (database, logging)
-│   ├── models/             # SQLAlchemy database models
-│   ├── schemas/            # Pydantic schemas
-│   └── main.py             # FastAPI application entry point
-├── frontend/               # Next.js/React frontend application
-│   ├── src/
-│   │   ├── app/           # Next.js 13+ app directory
-│   │   ├── components/    # Reusable React components
-│   │   └── lib/          # Utility functions
-│   └── package.json       # Node.js dependencies
-├── deployment/            # Production deployment scripts and configuration
-│   ├── README.md          #   Complete deployment guide
-│   ├── prod.example.env   #   Production environment template
-│   ├── gcloud-deploy.sh   #   Single-command Google Cloud deployment
-│   ├── setup-cloudsql.sh  #   Cloud SQL database setup helper
-│   └── cloudbuild.yaml    #   CI/CD pipeline configuration
-├── scripts/                # Setup and utility scripts
-├── alembic/               # Database migration files
-├── make_ingest.py         # Utility script for generating project digests with gitingest
-├── gunicorn/              # Gunicorn configuration files
-├── packages/              # Python dependency files
-├── tests/                 # Backend test suite
-├── utils/                 # Shared utility scripts
-├── docker-compose.yml     # Multi-service Docker configuration
-├── Dockerfile            # Backend container definition
-└── start_gunicorn.py     # Cross-platform application entrypoint
+satark/
+├── app/                          # FastAPI backend
+│   ├── core/
+│   │   ├── settings.py           # Pydantic Settings (env vars)
+│   │   ├── database.py           # SQLAlchemy engine + get_db()
+│   │   ├── constants.py          # PRIORITY_MAP, score_to_priority()
+│   │   └── logging_config.py     # Structured logging setup
+│   ├── models/                   # SQLAlchemy ORM models
+│   │   ├── user.py               # User (guest/analyst/admin roles)
+│   │   ├── incident.py           # Incident (SAT-YYYY-NNNNN case numbers)
+│   │   ├── evidence_file.py      # EvidenceFile (SHA-256 checksums)
+│   │   └── audit_log.py          # AuditLog (full action history)
+│   ├── schemas/                  # Pydantic request/response schemas
+│   ├── routers/                  # FastAPI routers (thin, delegate to services)
+│   │   ├── auth.py               # /api/auth/*
+│   │   ├── incidents.py          # /api/incidents/*
+│   │   ├── analyze.py            # /api/analyze/* (quick scan, no auth)
+│   │   ├── dashboard.py          # /api/dashboard/*
+│   │   └── admin.py              # /api/admin/*
+│   ├── services/
+│   │   ├── ai/                   # AI analysis pipeline
+│   │   │   ├── client.py         # Gemini client (singleton, retry, semaphore)
+│   │   │   ├── schemas.py        # ThreatAnalysis structured output
+│   │   │   ├── prompts.py        # 6 prompt templates
+│   │   │   ├── orchestrator.py   # Routes to analyzer, updates incident
+│   │   │   └── analyzers/        # text, url, image, audio, video, document
+│   │   ├── auth.py               # JWT creation, bcrypt hashing
+│   │   ├── incident.py           # Incident CRUD + file uploads
+│   │   ├── dashboard.py          # Stats + 6 chart data aggregations
+│   │   ├── storage.py            # GCS / local filesystem dual backend
+│   │   ├── audit.py              # Audit trail logging
+│   │   └── report.py             # PDF generation (ReportLab, 9 sections)
+│   ├── security.py               # get_current_user, require_role()
+│   └── main.py                   # App init, CORS, exception handlers
+│
+├── frontend/src/                 # Next.js 15 frontend
+│   ├── app/
+│   │   ├── (public)/             # No sidebar: landing, submit, case, login, register
+│   │   └── (protected)/          # With sidebar: dashboard, workbench, admin
+│   ├── components/
+│   │   ├── landing/              # Hero, StatsBar, TryItNow, HowItWorks, Footer
+│   │   ├── analysis/             # ThreatScore gauge, IOCList, MitigationPlaybook
+│   │   ├── incidents/            # SubmitForm, IncidentCard, ReportDownloadButton
+│   │   ├── dashboard/            # StatCard, Charts A–F
+│   │   ├── workbench/            # WorkbenchList, WorkbenchDetail
+│   │   ├── media/                # CameraCapture, AudioRecorder
+│   │   ├── layout/               # Navbar, Sidebar, Header
+│   │   └── ui/                   # Badge, StatusBadge, Skeleton, EmptyState
+│   ├── hooks/                    # useAuth, usePolling, useIncidents, useCopyToClipboard
+│   ├── contexts/                 # AuthContext (JWT + role state)
+│   ├── lib/                      # api-client, utils, constants
+│   ├── types/                    # TypeScript interfaces (7 files)
+│   └── data/                     # demo-samples.json
+│
+├── tests/                        # 52 backend tests (pytest)
+├── scripts/                      # seed_db, seed_demo_data, reset_db, migration_utils
+├── deployment/                   # satark-deploy.sh, cloudbuild.yaml, prod.example.env
+├── alembic/                      # Database migrations
+├── docker-compose.yml            # PostgreSQL + backend + frontend
+├── Dockerfile                    # Backend container (Python 3.11)
+├── frontend/Dockerfile           # Frontend container (3-stage standalone)
+├── Makefile                      # 18 development + deployment targets
+└── .env.example                  # All required environment variables
 ```
 
-## Platform-Specific Notes
+---
 
-### Windows Development
+## Environment Variables
 
-1. **Line Endings**: Git may convert LF to CRLF. Configure Git:
-   ```cmd
-   git config --global core.autocrlf false
-   ```
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
+| `GEMINI_API_KEY` | ✅ | — | Google AI API key for threat analysis |
+| `JWT_SECRET_KEY` | ✅ | — | Secret for JWT signing (`openssl rand -hex 32`) |
+| `APP_ENV` | No | `development` | `development` / `production` |
+| `LOG_LEVEL` | No | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |
+| `AI_MODEL` | No | `gemini-3-flash-preview` | AI model identifier |
+| `AI_CONCURRENCY_LIMIT` | No | `5` | Max parallel AI calls (rate limit guard) |
+| `STORAGE_BACKEND` | No | `local` | `local` (dev) or `gcs` (production) |
+| `GCS_BUCKET_NAME` | No | `satark-evidence` | GCS bucket for evidence files |
+| `LOCAL_UPLOAD_DIR` | No | `/app/uploads` | Local file upload directory |
+| `JWT_ALGORITHM` | No | `HS256` | JWT signing algorithm |
+| `JWT_EXPIRATION_MINUTES` | No | `1440` | Token expiry (default: 24 hours) |
+| `FRONTEND_URL` | No | `http://localhost:3000` | CORS origin |
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:8000` | Backend URL for frontend |
 
-2. **PowerShell Execution Policy**: If running scripts fails:
-   ```powershell
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-   ```
+---
 
-3. **Long Path Names**: Enable long path support in Windows 10/11:
-   ```cmd
-   # Run as Administrator
-   reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1
-   ```
+## Deployment
 
-4. **Docker Desktop**: Ensure WSL2 backend is enabled for better performance.
-
-### macOS Development
-
-1. **Homebrew**: Install for easy package management:
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-
-2. **Xcode Command Line Tools**: Required for some Python packages:
-   ```bash
-   xcode-select --install
-   ```
-
-### Linux Development
-
-1. **Docker**: Install Docker and Docker Compose:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get update
-   sudo apt-get install docker.io docker-compose
-   sudo usermod -aG docker $USER
-   ```
-
-2. **Python venv**: Ensure venv module is available:
-   ```bash
-   sudo apt-get install python3-venv
-   ```
-
-## Troubleshooting
-
-### Common Setup Issues
-
-**Database Connection Errors:**
-- Verify PostgreSQL is running
-- Check DATABASE_URL in `.env` file
-- Ensure database exists: `createdb app_db`
-
-**Port Already in Use:**
-```bash
-# Find process using port
-lsof -i :8001        # macOS/Linux
-netstat -ano | findstr :8001  # Windows
-
-# Kill process or change port in configuration
-```
-
-**Docker Issues on Windows:**
-- Enable WSL2 backend in Docker Desktop
-- Increase memory allocation in Docker Desktop settings
-- Use PowerShell or Command Prompt (not Git Bash) for Docker commands
-
-**Permission Errors (Linux/macOS):**
-```bash
-sudo chown -R $USER:$USER .
-chmod +x scripts/*.py
-```
-
-**Node.js/Python Version Issues:**
-- Use Node Version Manager (nvm) for Node.js
-- Use pyenv for Python version management
-
-### Getting Help
-
-1. Check the logs:
-   ```bash
-   docker-compose logs backend
-   docker-compose logs frontend
-   ```
-
-2. Verify environment configuration:
-   ```bash
-   docker-compose config
-   ```
-
-3. Reset Docker environment:
-   ```bash
-   docker-compose down -v
-   docker-compose up --build
-   ```
-
-## Production Deployment
-
-### Google Cloud Run (Recommended)
-
-Deploy your entire application to Google Cloud Run with a single command:
+Satark is deployed on **Google Cloud Run** with Cloud SQL, GCS, and Secret Manager.
 
 ```bash
-# 1. Set up your production environment
-cp deployment/prod.example.env deployment/.env.prod
-# Edit .env.prod with your project settings
+# Full deployment (backend + frontend)
+make deploy
 
-# 2. Deploy to Google Cloud Run
-./deployment/gcloud-deploy.sh
+# Individual service deployment
+make deploy-backend
+make deploy-frontend
+
+# Check status
+make deploy-status
 ```
 
-**What you get:**
-- **Serverless**: Pay only for requests, automatic scaling
-- **Managed Infrastructure**: Google Cloud handles scaling, SSL, and monitoring
-- **HTTPS**: Automatic SSL certificates  
-- **CI/CD Ready**: GitHub integration with Cloud Build
-- **Monitoring**: Built-in logging, metrics, and error reporting
-- **Production Features**: Health checks, error handling, and optimized configurations
+See [`deployment/`](./deployment/) for the complete deployment guide including Cloud SQL setup, Secret Manager configuration, and CI/CD pipeline.
 
-**Key Features:**
-- Automatic scaling from 0 to 1000+ instances based on traffic
-- Built-in load balancing and SSL termination
-- Integration with Google Cloud's monitoring and logging services
-- Support for custom domains and advanced networking
+---
 
-**Full deployment guide:** [deployment/README.md](./deployment/README.md)
+## Testing
 
-### Alternative Deployment Options
-
-**Docker Compose (Development/Testing):**
 ```bash
-docker-compose up --build
+# Run all 52 backend tests
+make test-be
+
+# Frontend lint + build
+cd frontend && npm run lint && npm run build
 ```
 
-**Other Cloud Providers:**
-- **AWS**: Use ECS/Fargate + RDS
-- **Azure**: Use Container Instances + PostgreSQL
-- **DigitalOcean**: Use App Platform + Managed Database
-- **Heroku**: Use standard buildpacks + Heroku Postgres
+Test coverage includes: authentication, incident CRUD, dashboard aggregations, admin operations, AI pipeline (mocked), and PDF report generation.
 
-For detailed instructions on other deployment methods, see the [deployment folder](./deployment/).
+---
 
-## Contributing
+## Key Design Decisions
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -am 'Add feature'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a Pull Request
+| Decision | Rationale |
+|----------|-----------|
+| JWT + bcrypt (not Keycloak) | Standalone project — Keycloak adds unnecessary complexity |
+| Polling (not WebSocket) | Simpler, stateless; analyses complete in 5–15 seconds |
+| ReportLab (not WeasyPrint) | Pure Python, no system deps, lightweight Docker image |
+| Local filesystem fallback | No GCS emulator needed in dev; `/app/uploads` + StaticFiles |
+| PostgreSQL SEQUENCE for case numbers | Thread-safe auto-increment (not MAX+1 which has race conditions) |
+| AI determines all classifications | No hardcoded thresholds — only display mapping in code |
+
+Full decision log: [`docs/memory-bank/decisionLog.md`](./docs/memory-bank/decisionLog.md)
+
+---
 
 ## License
 
-This template is provided as-is for educational and development purposes. Customize according to your project needs.
+Built for Smart India Hackathon 2025 — educational and demonstration purposes.

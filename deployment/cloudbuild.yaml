@@ -45,6 +45,7 @@ substitutions:
   # AI config (not secret — just model name)
   _AI_MODEL: 'gemini-3-flash-preview'
   _STORAGE_BACKEND: 'gcs'
+  _CLOUD_SQL_CONNECTION_NAME: '${PROJECT_ID}:asia-south1:satark-postgres'
 
 steps:
   # ── Step 1: Build backend image ─────────────────────────────────────────────
@@ -107,6 +108,7 @@ steps:
       - '--concurrency=80'
       - '--timeout=300s'
       - '--cpu-boost'
+      - '--add-cloudsql-instances=${_CLOUD_SQL_CONNECTION_NAME}'
       - '--set-env-vars=APP_ENV=production,AI_MODEL=${_AI_MODEL},STORAGE_BACKEND=${_STORAGE_BACKEND},LOG_LEVEL=INFO'
       - '--set-secrets=DATABASE_URL=satark-database-url:latest,GEMINI_API_KEY=satark-gemini-api-key:latest,JWT_SECRET_KEY=satark-jwt-secret-key:latest,GCS_BUCKET_NAME=satark-gcs-bucket-name:latest,FRONTEND_URL=satark-frontend-url:latest'
       - '--allow-unauthenticated'

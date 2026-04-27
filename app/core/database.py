@@ -8,7 +8,14 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .settings import settings
 
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=2,
+    pool_timeout=30,
+    pool_recycle=1800,  # Recycle connections every 30 min (Cloud SQL best practice)
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

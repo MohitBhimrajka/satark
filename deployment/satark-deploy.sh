@@ -26,6 +26,7 @@ PROJECT_ID="${GOOGLE_CLOUD_PROJECT:?Set GOOGLE_CLOUD_PROJECT in deployment/.env.
 REGION="${GOOGLE_CLOUD_REGION:-asia-south1}"
 BACKEND_SERVICE="${BACKEND_SERVICE_NAME:-satark-backend}"
 FRONTEND_SERVICE="${FRONTEND_SERVICE_NAME:-satark-frontend}"
+CLOUD_SQL_CONNECTION_NAME="${CLOUD_SQL_CONNECTION_NAME:?Set CLOUD_SQL_CONNECTION_NAME in deployment/.env.prod}"
 REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/satark"  # Artifact Registry (not GCR)
 IMAGE_TAG="${IMAGE_TAG:-$(git -C "$SCRIPT_DIR/.." rev-parse --short HEAD 2>/dev/null || echo 'latest')}"
 
@@ -120,6 +121,7 @@ deploy_backend() {
         --region="$REGION" \
         --platform=managed \
         --port=8000 \
+        --add-cloudsql-instances="${CLOUD_SQL_CONNECTION_NAME}" \
         --memory=512Mi \
         --cpu=1 \
         --min-instances=0 \

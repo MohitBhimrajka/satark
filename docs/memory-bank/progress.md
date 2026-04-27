@@ -97,6 +97,13 @@
     - [x] StaggerList wired into dashboard stat cards (was unused)
     - [x] ARIA labels on sidebar, header logout button
     - [x] AnalyzingState: role=status + aria-live for screen readers
+  - [x] Phase 5 Gap Remediation Pass 2 — 2026-04-27
+    - [x] Enhanced dashboard skeleton (donut + bar shapes)
+    - [x] Enhanced workbench skeleton (table column widths)
+    - [x] Created workbench/[id]/loading.tsx (was missing)
+    - [x] Enhanced case detail skeleton (analysis result layout)
+    - [x] Analysis failed → EmptyState with AlertTriangle icon
+    - [x] Added id='main-content' to both layout main elements (skip-to-content fix)
 
 ## In Progress
 - [/] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

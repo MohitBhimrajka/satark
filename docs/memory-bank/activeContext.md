@@ -1,25 +1,33 @@
 # Active Context
 
 ## Currently Working On
-Phase 6: Deployment — Cloud Run, GCS, CI/CD
+Phase 6: Deployment — **LIVE IN PRODUCTION** ✅
 
 ## Current State
-- Phases 1–5 **COMPLETE** — all features built, tested, polished
-- 52 tests passing, 0 lint errors, clean production build
-- 10 frontend routes compiling, 11 API endpoints working
-- PDF report generation, camera/mic integration, demo seed script all done
+- **Backend:** `https://satark-backend-1094555524365.asia-south1.run.app` — HEALTHY
+- **Frontend:** `https://satark-frontend-1094555524365.asia-south1.run.app` — SERVING
+- **GCP Project:** `satark-sih-2025` (billing: Pioneer)
+- **Cloud SQL:** `satark-postgres` (PostgreSQL 15, asia-south1, RUNNABLE)
+- **GCS Bucket:** `gs://satark-evidence/`
+- **Secrets:** 6/6 in Secret Manager, all bound to Cloud Run SA
+- **IAM:** Compute SA has `cloudsql.client` + `storage.objectAdmin`
+- CORS configured: frontend URL → backend allows origin
 
 ## Immediate Next Steps
-1. Review Phase 6 deployment plan (`docs/06-phase-6-deployment.md`)
-2. Set up Cloud Run service + GCS bucket for file storage
-3. Configure CI/CD pipeline for automated deployments
+1. Open `https://satark-frontend-1094555524365.asia-south1.run.app` in browser — verify full flow
+2. Seed production database (login, create test incidents)
+3. Optional: Set up Cloud Build CI/CD trigger (Step 11 in plan)
+4. Final presentation prep
 
 ## Blockers
-None
+None — both services deployed and serving
 
-## Recent Changes (Phase 5 — 2026-04-27)
-1. **PDF Reports:** ReportLab service generating 9-section branded PDFs, endpoint with audit logging, download button on case/workbench pages
-2. **Demo Seed Data:** 20 realistic incidents across all classifications/statuses/input types, restructured demo-samples.json
-3. **Camera/Mic:** CameraCapture and AudioRecorder components wired into TryItNow
-4. **UI Polish:** PageTransition, StaggerList, button press feedback, card hover effects
-5. **SEO/A11y:** OG tags, branded OG image, skip-to-content link, focus-visible outlines
+## Recent Changes (Phase 6 — 2026-04-27)
+1. **GCP Project:** Created `satark-sih-2025` with billing attached
+2. **Cloud SQL:** Provisioned `satark-postgres` (POSTGRES_15, db-g1-small, asia-south1)
+3. **Secrets:** 6 secrets in Secret Manager (database-url, gemini-api-key, jwt-secret, gcs-bucket, frontend-url, next-public-api-url)
+4. **Dockerfile fix:** Added `COPY utils/` for wait_for_db.py (was missing, caused container crash)
+5. **wait_for_db.py fix:** Added DATABASE_URL support for production (was only using POSTGRES_* Docker env vars)
+6. **database.py:** Added pool_size=5, pool_recycle=1800 for Cloud SQL reliability
+7. **satark-deploy.sh:** Added `--add-cloudsql-instances` flag + CLOUD_SQL_CONNECTION_NAME variable
+8. **cloudbuild.yaml:** Added `--add-cloudsql-instances` + substitution variable

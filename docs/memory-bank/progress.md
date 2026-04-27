@@ -106,7 +106,25 @@
     - [x] Added id='main-content' to both layout main elements (skip-to-content fix)
 
 ## In Progress
-- [/] Phase 6: Deployment (Cloud Run, GCS, CI/CD)
+- None
+
+## Completed — Phase 6: Deployment (2026-04-27)
+- [x] GCP Project: `satark-sih-2025` created with billing
+- [x] Cloud SQL: `satark-postgres` (POSTGRES_15, db-g1-small, asia-south1)
+- [x] Database: `satark_db` + `satark_user` created
+- [x] GCS Bucket: `gs://satark-evidence/` (ASIA-SOUTH1, uniform access)
+- [x] Secret Manager: 6 secrets (database-url, gemini-api-key, jwt-secret-key, gcs-bucket-name, frontend-url, next-public-api-url)
+- [x] IAM: Compute SA → cloudsql.client + storage.objectAdmin + secretmanager.secretAccessor
+- [x] Dockerfile fix: Added `COPY utils/` for wait_for_db.py
+- [x] wait_for_db.py: Added DATABASE_URL support for Cloud Run production
+- [x] database.py: Added pool_size=5, pool_recycle=1800 for Cloud SQL
+- [x] satark-deploy.sh: Added --add-cloudsql-instances flag
+- [x] cloudbuild.yaml: Added --add-cloudsql-instances + substitution variable
+- [x] Backend deployed: `https://satark-backend-1094555524365.asia-south1.run.app`
+- [x] Frontend deployed: `https://satark-frontend-1094555524365.asia-south1.run.app`
+- [x] CORS verified: frontend origin allowed by backend
+- [x] Health check: `{"status": "healthy", "service": "satark-api"}`
 
 ## Planned
-- [ ] Phase 6: Deployment (Cloud Run, GCS, CI/CD)
+- [ ] CI/CD: Cloud Build trigger on push to main (optional, Step 11)
+- [ ] Production database seeding (demo incidents)

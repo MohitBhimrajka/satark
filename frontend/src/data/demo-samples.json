@@ -1,17 +1,42 @@
 {
   "urls": [
-    "https://secure-update-verify.com/login?id=3847",
-    "http://gov-portal-update.xyz/verify-account",
-    "https://defence-clearance-renewal.tk/submit"
+    {
+      "label": "Phishing URL — Fake SBI Login",
+      "url": "http://sbi-banking-secure.tk/login?ref=army"
+    },
+    {
+      "label": "Typosquatting — Fake Google Docs",
+      "url": "http://g00gle-docs.com/shared/document?id=army123"
+    },
+    {
+      "label": "Govt Impersonation — Fake Portal",
+      "url": "http://gov-portal-update.xyz/verify-account"
+    },
+    {
+      "label": "Fake Defence Update",
+      "url": "http://defence-portal-update.xyz/patch/security-update-v3.exe"
+    },
+    {
+      "label": "Safe URL — Official MoD Website",
+      "url": "https://mod.gov.in"
+    }
   ],
   "texts": [
-    "URGENT: Your bank account has been compromised. Click here immediately to verify your identity: bit.ly/3xK9mQ2. Failure to respond within 24 hours will result in account suspension.",
-    "Dear Sir/Ma'am, This is from Army HQ IT Cell. Your email password expires today. Please update immediately at https://army-mail-reset.co/update to avoid service disruption. — IT Helpdesk"
-  ],
-  "files": [
     {
-      "name": "sample_phishing_email.png",
-      "description": "Screenshot of a phishing email impersonating defence procurement"
+      "label": "Bank Phishing SMS",
+      "content": "ALERT: Your SBI account has been temporarily suspended due to suspicious activity. To restore access, verify immediately: http://sbi-verify-in.tk/login?acc=9XXXX. Do not ignore or your account will be permanently blocked. - SBI Security Team"
+    },
+    {
+      "label": "Army Impersonation Email",
+      "content": "Dear Sir/Ma'am, This is from Army HQ IT Cell. Your email password expires today. Please update immediately at https://army-mail-reset.co/update to avoid service disruption. — IT Helpdesk"
+    },
+    {
+      "label": "WhatsApp Welfare Scam",
+      "content": "Congratulations! You have been selected for the Indian Army Welfare Fund scheme. You will receive Rs 2,50,000. To claim, send your service number, Aadhaar, and bank account details to armywelfare2026@gmail.com"
+    },
+    {
+      "label": "Safe Message — Routine",
+      "content": "Reminder: PT parade tomorrow at 0600 hours at the main ground. All personnel to carry service ID. - Unit Adjutant"
     }
   ]
 }

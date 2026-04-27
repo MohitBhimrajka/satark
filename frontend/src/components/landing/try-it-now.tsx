@@ -74,10 +74,12 @@ export function TryItNow() {
   const loadSample = () => {
     if (activeTab === 'url') {
       const urls = demoSamples.urls
-      setInput(urls[Math.floor(Math.random() * urls.length)])
+      const sample = urls[Math.floor(Math.random() * urls.length)]
+      setInput(sample.url)
     } else if (activeTab === 'text') {
       const texts = demoSamples.texts
-      setInput(texts[Math.floor(Math.random() * texts.length)])
+      const sample = texts[Math.floor(Math.random() * texts.length)]
+      setInput(sample.content)
     }
   }
 

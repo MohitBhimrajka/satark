@@ -244,3 +244,102 @@ def test_quick_scan_url_endpoint(mock_analyze, client):
     data = resp.json()["data"]
     assert data["analysis"]["classification"] == "phishing"
 
+
+# ── Orchestrator tests (mocked DB + analyzer) ──────────────────────────────
+
+@pytest.mark.asyncio
+@patch("app.services.ai.orchestrator.log_action")
+@patch("app.services.ai.analyzers.text.generate_structured")
+async def test_orchestrator_updates_incident(mock_gen, mock_log):
+    """
+    Orchestrator should write classification, threat_score, priority,
+    ai_analysis, and status=analyzed to the incident after success.
+    Uses a mocked DB session to avoid SQLite UUID dialect issues.
+    """
+    import uuid as uuid_module
+    from unittest.mock import MagicMock
+    from app.services.ai.orchestrator import analyze_incident
+
+    mock_gen.return_value = MOCK_PHISHING_JSON
+
+    # Build a mock incident that looks like a real one
+    incident_id = str(uuid_module.uuid4())
+    mock_incident = MagicMock()
+    mock_incident.id = incident_id
+    mock_incident.input_type = "text"
+    mock_incident.input_content = "ALERT: Your HDFC account blocked."
+    mock_incident.case_number = "SAT-2026-00001"
+    mock_incident.status = "submitted"
+
+    # Build a mock DB session
+    mock_db = MagicMock()
+    mock_db.query.return_value.filter.return_value.first.return_value = mock_incident
+
+    with patch("app.core.database.SessionLocal", return_value=mock_db):
+        await analyze_incident(incident_id)
+
+    # The orchestrator should have set these fields
+    assert mock_incident.status == "analyzed"
+    assert mock_incident.classification == "phishing"
+    assert mock_incident.threat_score == 85
+    assert mock_incident.priority == "critical"
+    assert mock_incident.ai_analysis["classification"] == "phishing"
+    mock_log.assert_called_once()
+    call_kwargs = mock_log.call_args.kwargs
+    assert call_kwargs["action"] == "ai_analysis_complete"
+    assert call_kwargs["actor_label"] == "AI_AGENT"
+
+
+@pytest.mark.asyncio
+@patch("app.services.ai.orchestrator.log_action")
+@patch("app.services.ai.analyzers.text.generate_structured")
+async def test_orchestrator_handles_failure(mock_gen, mock_log):
+    """
+    Orchestrator should set status=analysis_failed and log the failure
+    when the AI analyzer raises an exception.
+    """
+    import uuid as uuid_module
+    from unittest.mock import MagicMock
+    from app.services.ai.orchestrator import analyze_incident
+
+    mock_gen.side_effect = RuntimeError("AI service unavailable")
+
+    incident_id = str(uuid_module.uuid4())
+    mock_incident = MagicMock()
+    mock_incident.id = incident_id
+    mock_incident.input_type = "text"
+    mock_incident.input_content = "Suspicious message"
+    mock_incident.case_number = "SAT-2026-00002"
+    mock_incident.status = "submitted"
+
+    mock_db = MagicMock()
+    mock_db.query.return_value.filter.return_value.first.return_value = mock_incident
+
+    with patch("app.core.database.SessionLocal", return_value=mock_db):
+        await analyze_incident(incident_id)
+
+    assert mock_incident.status == "analysis_failed"
+    mock_log.assert_called_once()
+    call_kwargs = mock_log.call_args.kwargs
+    assert call_kwargs["action"] == "ai_analysis_failed"
+    assert call_kwargs["actor_label"] == "AI_AGENT"
+
+
+def test_incident_triggers_background(client):
+    """
+    POST /api/incidents should enqueue the AI analysis background task.
+    The autouse mock_ai_background_task fixture intercepts analyze_incident.
+    We verify the response message indicates analysis is in progress.
+    """
+    resp = client.post(
+        "/api/incidents",
+        data={
+            "input_type": "text",
+            "input_content": "ALERT: Click this link immediately http://hdfc-secure.tk",
+        },
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["message"] == "Incident submitted. AI analysis in progress."
+    assert body["data"]["status"] == "submitted"
+    assert body["data"]["input_type"] == "text"

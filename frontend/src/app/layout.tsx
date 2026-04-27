@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { cn } from '@/lib/utils'
+import { Providers } from './providers'
 
 export const metadata = {
   title: 'Satark — AI-Powered Cyber Incident Intelligence',
@@ -36,7 +37,7 @@ export default function RootLayout({
           fontMono.variable
         )}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

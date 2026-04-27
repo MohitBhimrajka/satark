@@ -47,21 +47,20 @@ export function SubmitForm() {
     setIsSubmitting(true)
 
     try {
-      let res: ApiResponse<Incident>
+      const formData = new FormData()
+      formData.append('input_type', inputType)
 
       if (isFileType && file) {
-        const formData = new FormData()
-        formData.append('input_type', inputType)
-        formData.append('file', file)
-        if (description.trim()) formData.append('description', description)
-        res = await api.upload<ApiResponse<Incident>>('/api/incidents', formData)
+        formData.append('files', file)
       } else {
-        res = await api.post<ApiResponse<Incident>>('/api/incidents', {
-          input_type: inputType,
-          input_content: content,
-          description: description || undefined,
-        })
+        formData.append('input_content', content)
       }
+
+      if (description.trim()) {
+        formData.append('description', description)
+      }
+
+      const res = await api.upload<ApiResponse<Incident>>('/api/incidents', formData)
 
       setResult({
         caseNumber: res.data.case_number,

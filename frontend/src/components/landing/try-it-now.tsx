@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ResultCard } from '@/components/analysis/result-card'
+import { CameraCapture } from '@/components/media/camera-capture'
+import { AudioRecorder } from '@/components/media/audio-recorder'
 import api from '@/lib/api-client'
 import type { ThreatAnalysis } from '@/types'
 import { cn } from '@/lib/utils'
@@ -58,6 +60,42 @@ export function TryItNow() {
         err instanceof Error
           ? err.message
           : 'Analysis failed. Please try again.'
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleMediaCapture = async (blob: Blob) => {
+    setIsLoading(true)
+    setResult(null)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      const ext = activeTab === 'image' ? 'png' : 'webm'
+      const mimeType = activeTab === 'image' ? 'image/png' : 'audio/webm'
+      formData.append('input_type', activeTab)
+      formData.append('files', new File([blob], `capture.${ext}`, { type: mimeType }))
+
+      const res = await api.upload<{ data: { classification: string; threat_score: number; confidence: number; ai_analysis: Record<string, unknown> } }>('/api/incidents', formData)
+      const d = res.data
+      if (d.ai_analysis) {
+        setResult({
+          classification: d.classification as ThreatAnalysis['classification'],
+          threat_score: d.threat_score ?? 0,
+          confidence: d.confidence ?? 0,
+          summary: (d.ai_analysis as Record<string, string>).summary || 'Analysis submitted. Check the case detail page for full results.',
+          indicators: (d.ai_analysis as Record<string, string[]>).indicators || [],
+          mitigation_steps: (d.ai_analysis as Record<string, string[]>).mitigation_steps || [],
+          risk_factors: (d.ai_analysis as Record<string, string[]>).risk_factors || [],
+        })
+      } else {
+        setError('Incident submitted successfully. Analysis is processing — check the case page for results.')
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Analysis failed. Please try again.'
       )
     } finally {
       setIsLoading(false)
@@ -135,10 +173,16 @@ export function TryItNow() {
               rows={4}
             />
           )}
-          {(activeTab === 'image' || activeTab === 'audio' || activeTab === 'file') && (
+          {activeTab === 'image' && (
+            <CameraCapture onCapture={handleMediaCapture} />
+          )}
+          {activeTab === 'audio' && (
+            <AudioRecorder onCapture={handleMediaCapture} />
+          )}
+          {activeTab === 'file' && (
             <div className='flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50/50 px-6 py-12 text-center'>
               <p className='text-sm text-gray-500'>
-                File-based analysis is available through the full incident report form.
+                Document analysis is available through the full incident report form.
               </p>
               <a
                 href='/submit'

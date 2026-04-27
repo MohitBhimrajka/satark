@@ -36,6 +36,7 @@ export function Sidebar() {
     <aside
       className='fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-gray-200 bg-white'
       style={{ width: 'var(--sidebar-width, 260px)' }}
+      aria-label='Main navigation'
     >
       {/* Logo */}
       <div className='flex h-16 items-center gap-2.5 border-b border-gray-100 px-6'>
@@ -48,7 +49,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className='flex-1 px-3 py-4'>
+      <nav className='flex-1 px-3 py-4' aria-label='Sidebar navigation'>
         <ul className='flex flex-col gap-1'>
           {visibleItems.map((item) => {
             const isActive =

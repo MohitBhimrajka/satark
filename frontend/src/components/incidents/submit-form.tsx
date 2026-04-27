@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FileUpload } from '@/components/ui/file-upload'
+import { CameraCapture } from '@/components/media/camera-capture'
+import { AudioRecorder } from '@/components/media/audio-recorder'
 import { InputTypeSelector } from './input-type-selector'
 import { SubmissionSuccess } from './submission-success'
 import api from '@/lib/api-client'
@@ -124,17 +126,41 @@ export function SubmitForm() {
             />
           )}
 
-          {isFileType && (
+          {inputType === 'image' && (
+            <div className='space-y-4'>
+              <CameraCapture
+                onCapture={(blob) => {
+                  setFile(new File([blob], 'capture.png', { type: 'image/png' }))
+                }}
+              />
+              <div className='flex items-center gap-3'>
+                <div className='h-px flex-1 bg-gray-200' />
+                <span className='text-xs font-medium text-gray-400'>or upload a file</span>
+                <div className='h-px flex-1 bg-gray-200' />
+              </div>
+              <FileUpload accept='image/*' onFileSelect={setFile} />
+            </div>
+          )}
+
+          {inputType === 'audio' && (
+            <div className='space-y-4'>
+              <AudioRecorder
+                onCapture={(blob) => {
+                  setFile(new File([blob], 'recording.webm', { type: 'audio/webm' }))
+                }}
+              />
+              <div className='flex items-center gap-3'>
+                <div className='h-px flex-1 bg-gray-200' />
+                <span className='text-xs font-medium text-gray-400'>or upload a file</span>
+                <div className='h-px flex-1 bg-gray-200' />
+              </div>
+              <FileUpload accept='audio/*' onFileSelect={setFile} />
+            </div>
+          )}
+
+          {(inputType === 'video' || inputType === 'document') && (
             <FileUpload
-              accept={
-                inputType === 'image'
-                  ? 'image/*'
-                  : inputType === 'audio'
-                    ? 'audio/*'
-                    : inputType === 'video'
-                      ? 'video/*'
-                      : '.pdf,.doc,.docx,.txt,.csv,.xlsx'
-              }
+              accept={inputType === 'video' ? 'video/*' : '.pdf,.doc,.docx,.txt,.csv,.xlsx'}
               onFileSelect={setFile}
             />
           )}

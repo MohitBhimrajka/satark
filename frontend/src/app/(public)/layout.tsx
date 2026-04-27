@@ -1,4 +1,7 @@
+'use client'
+
 import { Navbar } from '@/components/layout/navbar'
+import { PageTransition } from '@/components/layout/page-transition'
 
 export default function PublicLayout({
   children,
@@ -8,7 +11,9 @@ export default function PublicLayout({
   return (
     <>
       <Navbar />
-      <main>{children}</main>
+      <main>
+        <PageTransition>{children}</PageTransition>
+      </main>
     </>
   )
 }

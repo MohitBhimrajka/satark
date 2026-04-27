@@ -22,7 +22,7 @@ export function Header() {
             {user?.role}
           </span>
         </div>
-        <Button variant='ghost' size='icon' onClick={logout} title='Logout'>
+        <Button variant='ghost' size='icon' onClick={logout} title='Logout' aria-label='Sign out'>
           <LogOut className='h-4 w-4' strokeWidth={1.5} />
         </Button>
       </div>

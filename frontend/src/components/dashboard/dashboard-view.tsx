@@ -11,6 +11,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { StaggerList } from '@/components/ui/stagger-list'
 
 const CHART_TYPES = [
   'incidents_by_type',
@@ -160,23 +161,26 @@ export function DashboardView() {
       />
 
       {/* Stats cards */}
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
+      {loading ? (
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+          {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className='h-28' />
-          ))
-        ) : (
-          <>
-            <StatCard label='Total Incidents' value={stats?.total_incidents ?? 0} />
-            <StatCard label='Active Cases' value={totalActive} />
-            <StatCard label='Threats Detected' value={totalThreats} />
+          ))}
+        </div>
+      ) : (
+        <StaggerList className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+          {[
+            <StatCard key='total' label='Total Incidents' value={stats?.total_incidents ?? 0} />,
+            <StatCard key='active' label='Active Cases' value={totalActive} />,
+            <StatCard key='threats' label='Threats Detected' value={totalThreats} />,
             <StatCard
+              key='avg'
               label='Avg Threat Score'
               value={stats?.avg_threat_score ?? '—'}
-            />
-          </>
-        )}
-      </div>
+            />,
+          ]}
+        </StaggerList>
+      )}
 
       {/* Charts */}
       <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>

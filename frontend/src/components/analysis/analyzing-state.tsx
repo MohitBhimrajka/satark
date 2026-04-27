@@ -8,6 +8,9 @@ interface AnalyzingStateProps {
 export function AnalyzingState({ className }: AnalyzingStateProps) {
   return (
     <div
+      role='status'
+      aria-live='polite'
+      aria-label='AI analysis in progress'
       className={cn(
         'flex flex-col items-center justify-center gap-6 rounded-xl border-2 border-blue-200 bg-blue-50/30 px-8 py-16 text-center animate-pulse-border',
         className

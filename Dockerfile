@@ -49,6 +49,7 @@ COPY app/ ./app/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY scripts/ ./scripts/
+COPY utils/ ./utils/
 COPY gunicorn/ ./gunicorn/
 COPY start_gunicorn.py ./
 

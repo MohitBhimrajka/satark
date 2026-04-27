@@ -45,10 +45,24 @@
   - [x] Step 4.10: Workbench — incident list with search/filter/pagination, analyst case detail with status update controls
   - [x] Step 4.11: Admin — user management table with inline role change
   - [x] Step 4.12: Final verification — npm run lint ✓, npm run build ✓, 0 errors, 10 routes compiling
+- [x] Phase 4 Gap Remediation — 2026-04-27
+  - [x] Fixed 5 critical bugs: admin API path, role options, response envelope, analyst_notes field, middleware auth
+  - [x] Wired Framer Motion into Hero, HowItWorks, ThreatScore gauge, ResultCard
+  - [x] Wired React Hook Form + Zod into Login and Register pages
+  - [x] Extracted EvidenceList, AuditTimeline, AnalystControls into reusable components
+  - [x] Created demo-samples.json with 3 URLs + 2 texts, wired into TryItNow
+  - [x] Added per-page SEO metadata via server/client component split pattern
+  - [x] Added analyst controls to /case/[id] for authenticated users
+  - [x] Fixed ChartDataPoint type for recharts compatibility
+  - [x] Added error states to dashboard charts (replaced silent catch)
+  - [x] Refactored WorkbenchList to use useIncidents SWR hook
+  - [x] Added GET /api/admin/stats endpoint
+  - [x] Removed template supervity-favicon.png
+  - [x] Extracted auth forms (LoginForm, RegisterForm) + page views (DashboardView, WorkbenchList, AdminPanel) into components/
 
 ## In Progress
-- [/] Phase 5: Integration & Polish (PDF reports, real-time updates)
+- [/] Phase 5: Integration & Polish (PDF reports, demo seed data, OG tags)
 
 ## Planned
-- [ ] Phase 5: Integration & Polish (PDF reports, real-time updates)
+- [ ] Phase 5: Integration & Polish (PDF reports, demo seed data, OG tags, final UX)
 - [ ] Phase 6: Deployment (Cloud Run, GCS, CI/CD)

@@ -7,6 +7,9 @@ export const metadata = {
   description:
     'Report and analyze cyber threats with AI. Satark provides instant threat classification, IOC extraction, and mitigation playbooks for defence personnel.',
   keywords: ['cybersecurity', 'incident response', 'threat intelligence', 'AI'],
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 const fontSans = Inter({

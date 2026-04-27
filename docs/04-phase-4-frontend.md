@@ -1,474 +1,279 @@
-# Phase 4 — Frontend: Design System & Core Pages
+# Phase 4 — Frontend Implementation Plan (v2 — Audited)
 
-> **Goal:** Build the complete Satark frontend with premium light-mode design, all core pages, and interactive demo features.
-
-## Duration: ~35 commits
+> **Prereqs:** Phase 2 ✅ + Phase 3 ✅ (41 tests passing) | **Target:** ~40 commits
 
 ---
 
-## Step 4.0 — Next.js Route Group Architecture
+## Audit Findings (Gaps Fixed From v1)
 
-**Critical: Do this before building any pages.** The current `layout.tsx` wraps ALL routes in Sidebar + Header. This is wrong for Satark — public pages (landing, login) must not have the sidebar.
+| # | Gap | Fix |
+|---|-----|-----|
+| 1 | No `providers.tsx` (Toaster, SWR, Auth) | Added to Step 4.2 |
+| 2 | No TypeScript types mirroring backend schemas | Added Step 4.2 — `types/` directory |
+| 3 | No frontend constants (statuses, classifications) | Added Step 4.2 — `lib/constants.ts` |
+| 4 | **Chart names mismatch** — plan had `geo_map`, `top_iocs`, `severity_timeline` but backend has `severity_distribution`, `classification_breakdown`, `status_overview` | Fixed Step 4.9 to match actual backend |
+| 5 | No `loading.tsx` / `error.tsx` / `not-found.tsx` | Added to Step 4.3 |
+| 6 | No `formatDate()`, `threatScoreColor()` utils | Added to Step 4.2 |
+| 7 | No toast notifications pattern | Added to Step 4.2 (Toaster in providers) |
+| 8 | No favicon/logo asset | Added to Step 4.1 |
+| 9 | Dashboard stats is analyst-only but StatsBar on landing needs it | Fixed: landing uses hardcoded demo stats (no API call) |
+| 10 | No `useCopyToClipboard` | Added to Step 4.2 |
+| 11 | No per-page SEO metadata | Added to each page step |
+| 12 | No error/empty state patterns | Added to Step 4.4 |
+| 13 | Guest token shareable URL flow unclear | Detailed in Step 4.7 + 4.8 |
+| 14 | Stale `brand.*` colors in tailwind still referenced | Cleanup in Step 4.1 |
 
-### Tasks
-- [ ] Create route group structure:
+---
+
+## Step 4.1 — Design Tokens & Assets
+
+**Files:**
+- Modify `tailwind.config.js` — remove `brand.*`, add `satark.*` colors, add keyframes (shimmer, fade-in, slide-up, pulse-border)
+- Modify `globals.css` — add `.animate-shimmer`, `.animate-fade-in`, `.animate-pulse-border` utilities
+- Add `public/favicon.svg` — Satark shield icon
+- Update root `layout.tsx` — add favicon `<link>`
+
+**Key details:**
+- Satark color tokens per Rule 03: `navy-900 #0F172A`, `blue-500 #3B82F6`, `red-500 #EF4444`, `amber-500 #F59E0B`, `emerald-500 #10B981`
+- Font families already configured (Inter + JetBrains Mono) ✅
+
+**Commits:** `style: replace template brand colors with Satark tokens` / `style: add animation keyframes` / `chore: add Satark favicon`
+
+---
+
+## Step 4.2 — Foundation Layer (Types, Utils, Hooks, Providers)
+
+### 4.2a — TypeScript Types (`frontend/src/types/`)
+
+| File | Types | Source |
+|------|-------|--------|
+| `incident.ts` | `Incident`, `IncidentListItem`, `IncidentCreate`, `IncidentUpdate`, `IncidentFilter`, `PaginationMeta` | `app/schemas/incident.py` |
+| `user.ts` | `User`, `UserCreate`, `UserLogin`, `TokenResponse` | `app/schemas/user.py` |
+| `analysis.ts` | `ThreatAnalysis`, `QuickScanRequest`, `QuickScanResponse` | `app/schemas/analysis.py` |
+| `dashboard.ts` | `DashboardStats`, `ChartData`, `ChartDataPoint` | `app/schemas/dashboard.py` |
+| `evidence.ts` | `EvidenceFile` | `app/schemas/evidence.py` |
+| `api.ts` | `ApiResponse<T>`, `ApiListResponse<T>`, `ApiError` | Standard envelope |
+
+### 4.2b — Constants (`frontend/src/lib/constants.ts`)
+
+Mirror `app/core/constants.py`.
+
+### 4.2c — Utils Expansion (`frontend/src/lib/utils.ts`)
+
+Add: `formatDate()`, `formatRelativeTime()`, `threatScoreColor(score)`, `classificationColor(cls)`, `statusColor(status)`, `priorityColor(priority)`, `copyToClipboard(text)`
+
+### 4.2d — API Client Update (`frontend/src/lib/api-client.ts`)
+
+- Add `getToken()` / `setToken()` / `removeToken()` (localStorage)
+- Inject `Authorization: Bearer ${token}` when present
+- Add typed helper methods: `api.get<T>()`, `api.post<T>()`, `api.patch<T>()`, `api.upload<T>()`
+
+### 4.2e — Hooks (`frontend/src/hooks/`)
+
+| Hook | File | Purpose |
+|------|------|---------|
+| `useAuth` | `useAuth.ts` | JWT management, login/logout/register, user state, role checks |
+| `usePolling` | `usePolling.ts` | Poll `GET /api/incidents/:id` every 2s, stop when `status !== 'analyzing'` |
+| `useIncidents` | `useIncidents.ts` | SWR-based incident list with IncidentFilter params |
+| `useCopyToClipboard` | `useCopyToClipboard.ts` | Copy text + toast notification |
+
+### 4.2f — Providers (`frontend/src/app/providers.tsx`)
+
+Wraps: `<AuthProvider>` + `<Toaster />` (react-hot-toast) + `<SWRConfig>` (global error handler)
+
+Update root `layout.tsx` to wrap `{children}` in `<Providers>`.
+
+**Commits:** `feat: add TypeScript types mirroring backend schemas` / `feat: add frontend constants` / `feat: expand utils with formatting and color helpers` / `feat: wire JWT auth into api-client` / `feat: add useAuth, usePolling, useIncidents, useCopyToClipboard hooks` / `feat: add Providers wrapper with AuthContext, Toaster, SWR`
+
+---
+
+## Step 4.3 — Route Groups & Layouts
+
+### Directory structure
 ```
-frontend/src/app/
-├── (public)/              ← No sidebar — landing, submit, case, auth
-│   ├── layout.tsx         ← Only Navbar (no sidebar)
-│   ├── page.tsx           ← Landing page (/)
-│   ├── submit/
-│   │   └── page.tsx
-│   ├── case/[id]/
-│   │   └── page.tsx
-│   ├── login/
-│   │   └── page.tsx
-│   └── register/
-│       └── page.tsx
-│
-├── (protected)/           ← With Sidebar + Header
-│   ├── layout.tsx         ← Full app shell (sidebar + header) — auth-gated
-│   ├── dashboard/
-│   │   └── page.tsx
-│   ├── workbench/
+app/
+├── (public)/layout.tsx
+│   ├── page.tsx              ← Landing
+│   ├── submit/page.tsx
+│   ├── case/[id]/page.tsx
+│   ├── login/page.tsx
+│   └── register/page.tsx
+├── (protected)/layout.tsx
+│   ├── dashboard/page.tsx
+│   ├── workbench/page.tsx
+│   ├── workbench/[id]/page.tsx
+│   └── admin/page.tsx
+├── not-found.tsx
+├── error.tsx
+├── loading.tsx
+├── layout.tsx
+└── globals.css
+```
+
+### Layout components (`components/layout/`)
+
+| Component | Details |
+|-----------|---------|
+| `Navbar` | Logo + Home / Submit / Track Case + Login/Register (or user dropdown). Responsive. Sticky. |
+| `Sidebar` | 260px fixed, white bg. Items: Dashboard, Workbench, Admin (admin only). |
+| `Header` | Sticky top bar in protected layout. Page title + user avatar dropdown. |
+
+**Commits:** `refactor: create (public) and (protected) route groups` / `feat: add Navbar component` / `feat: add Sidebar and Header` / `feat: add protected layout with auth gate` / `feat: add not-found, error, loading pages` / `feat: add route protection in middleware`
+
+---
+
+## Step 4.4 — Shared UI Components
+
+14 UI components + 6 analysis components. See file manifest below.
+
+---
+
+## Step 4.5 — Landing Page (`/`)
+
+Hero + StatsBar (hardcoded) + TryItNow (5 tabs, quick-scan API) + HowItWorks + Footer
+
+---
+
+## Step 4.6 — Auth Pages
+
+Login + Register with react-hook-form + zod validation.
+
+---
+
+## Step 4.7 — Incident Submission (`/submit`)
+
+Type selector → input form → submit → success screen with shareable URL.
+
+---
+
+## Step 4.8 — Case Detail (`/case/[id]`)
+
+Polling + AI analysis display + evidence + audit trail + analyst controls.
+
+---
+
+## Step 4.9 — Dashboard (`/dashboard`)
+
+4 stat cards + 6 charts matching backend: `incidents_by_type`, `classification_breakdown`, `severity_distribution`, `status_overview`, `trend_line`, `confidence_distribution`.
+
+---
+
+## Step 4.10 — Workbench (`/workbench`)
+
+Case queue DataTable + detail view reusing case components.
+
+---
+
+## Step 4.11 — Admin Panel (`/admin`)
+
+User management table + platform stats.
+
+---
+
+## Step 4.12 — Polish & Build Verification
+
+Lint, build, responsive, dead code cleanup.
+
+---
+
+## Complete File Manifest (65 new + 6 modified)
+
+```
+frontend/src/
+├── app/
+│   ├── (public)/
+│   │   ├── layout.tsx
 │   │   ├── page.tsx
-│   │   └── [id]/
-│   │       └── page.tsx
-│   └── admin/
-│       └── page.tsx
-│
-├── globals.css
-├── layout.tsx             ← Root layout (only html, body — no UI chrome)
-└── providers.tsx
+│   │   ├── submit/page.tsx
+│   │   ├── case/[id]/page.tsx
+│   │   ├── case/[id]/loading.tsx
+│   │   ├── login/page.tsx
+│   │   └── register/page.tsx
+│   ├── (protected)/
+│   │   ├── layout.tsx
+│   │   ├── dashboard/
+│   │   │   ├── page.tsx
+│   │   │   └── loading.tsx
+│   │   ├── workbench/
+│   │   │   ├── page.tsx
+│   │   │   ├── loading.tsx
+│   │   │   └── [id]/page.tsx
+│   │   └── admin/page.tsx
+│   ├── not-found.tsx
+│   ├── error.tsx
+│   ├── loading.tsx
+│   ├── providers.tsx
+│   ├── layout.tsx                      (modified)
+│   └── globals.css                     (modified)
+├── components/
+│   ├── layout/
+│   │   ├── navbar.tsx
+│   │   ├── sidebar.tsx
+│   │   └── header.tsx
+│   ├── ui/
+│   │   ├── button.tsx                  (existing)
+│   │   ├── card.tsx                    (existing)
+│   │   ├── badge.tsx
+│   │   ├── status-badge.tsx
+│   │   ├── threat-score.tsx
+│   │   ├── input.tsx
+│   │   ├── textarea.tsx
+│   │   ├── file-upload.tsx
+│   │   ├── skeleton.tsx
+│   │   ├── modal.tsx
+│   │   ├── empty-state.tsx
+│   │   ├── page-header.tsx
+│   │   ├── stat-card.tsx
+│   │   ├── data-table.tsx
+│   │   └── tabs.tsx
+│   ├── analysis/
+│   │   ├── result-card.tsx
+│   │   ├── classification-badge.tsx
+│   │   ├── ioc-list.tsx
+│   │   ├── mitigation-playbook.tsx
+│   │   ├── confidence-meter.tsx
+│   │   └── analyzing-state.tsx
+│   ├── landing/
+│   │   ├── hero.tsx
+│   │   ├── stats-bar.tsx
+│   │   ├── try-it-now.tsx
+│   │   ├── how-it-works.tsx
+│   │   └── footer.tsx
+│   ├── incidents/
+│   │   ├── submit-form.tsx
+│   │   ├── input-type-selector.tsx
+│   │   ├── submission-success.tsx
+│   │   ├── case-header.tsx
+│   │   ├── evidence-list.tsx
+│   │   ├── audit-timeline.tsx
+│   │   └── analyst-controls.tsx
+│   └── dashboard/
+│       ├── dashboard-stats.tsx
+│       ├── chart-a-incidents-by-type.tsx
+│       ├── chart-b-classification.tsx
+│       ├── chart-c-severity.tsx
+│       ├── chart-d-status.tsx
+│       ├── chart-e-trend.tsx
+│       └── chart-f-confidence.tsx
+├── hooks/
+│   ├── useAuth.ts
+│   ├── usePolling.ts
+│   ├── useIncidents.ts
+│   └── useCopyToClipboard.ts
+├── contexts/
+│   └── AuthContext.tsx
+├── types/
+│   ├── incident.ts
+│   ├── user.ts
+│   ├── analysis.ts
+│   ├── dashboard.ts
+│   ├── evidence.ts
+│   └── api.ts
+├── lib/
+│   ├── api-client.ts                   (modified)
+│   ├── utils.ts                        (modified)
+│   └── constants.ts
+├── data/
+│   └── demo-samples.json
+└── middleware.ts                        (modified)
 ```
-
-- [ ] Update root `layout.tsx` to have NO UI chrome (just `<html><body><Providers>`)
-- [ ] Create `(public)/layout.tsx` with Navbar only
-- [ ] Create `(protected)/layout.tsx` with Sidebar + Header + auth check
-- [ ] `(protected)/layout.tsx` redirects to `/login` if no JWT in localStorage
-
-### Success Criteria
-- Landing page has NO sidebar
-- Dashboard page has sidebar and header
-- Route groups don't appear in URLs
-- Auth redirect works
-
-### Commits
-```
-refactor: restructure Next.js app with public/protected route groups
-feat: add public layout (navbar only) for landing and auth pages
-feat: add protected layout (sidebar + header) with auth gate
-```
-
----
-
-## Step 4.0a — Generate UI Mockups with Stitch MCP (Before Writing CSS)
-
-> Use the `mcp_StitchMCP_*` tools to generate visual mockups BEFORE writing any component code. This gives you pixel-perfect reference images and ensures the design is aligned before implementation.
-
-### Tasks
-- [ ] Create Satark Stitch project:
-  ```
-  mcp_StitchMCP_create_project(title="Satark — AI Cyber Incident Portal")
-  ```
-- [ ] Create design system with Satark tokens:
-  ```
-  mcp_StitchMCP_create_design_system({
-    colorMode: "LIGHT",
-    font: "INTER",
-    roundness: "ROUND_EIGHT",
-    customColor: "#1B3A5C",   # Satark navy
-    designMd: "Government-modern light mode. Premium. Clean. Data-dense."
-  })
-  ```
-- [ ] Generate screens for each key page (use `deviceType: DESKTOP`):
-  - Landing page with "Try It Now" hero
-  - Incident submission form
-  - Case detail with threat score gauge
-  - Analyst dashboard with 6 charts
-  - Workbench case queue table
-- [ ] Call `mcp_StitchMCP_get_screen` on each to get screenshot URLs
-- [ ] Use screenshots as visual reference while building Next.js components
-
-### Commits
-```
-docs: add Stitch UI mockup screenshots to docs/design/
-```
-
----
-
-## Step 4.1 — Design System & Tokens
-
-### Tasks
-- [ ] Update `tailwind.config.js`:
-  - Custom colors: navy, electric-blue, amber, red-critical, emerald-safe
-  - Custom font families: Inter, JetBrains Mono
-  - Custom spacing/radius tokens
-  - Custom animation keyframes (fade-in, slide-up, pulse-glow)
-
-- [ ] Update `globals.css`:
-  - CSS custom properties for all design tokens
-  - Base styles for body, headings, links
-  - Light mode palette (clean whites, subtle grays)
-  - Premium gradients (navy → blue for CTAs)
-  - Glass effects for cards (subtle backdrop-blur)
-
-- [ ] Add Google Fonts (Inter + JetBrains Mono) to `layout.tsx`
-
-### Success Criteria
-- Design tokens accessible via Tailwind classes
-- Typography renders correctly
-- No browser default fonts visible
-
-### Commits
-```
-style: add Satark design tokens to Tailwind config
-style: add global CSS with light-mode palette and typography
-style: add Inter and JetBrains Mono font imports
-```
-
----
-
-## Step 4.2 — Shared UI Components
-
-### Tasks
-- [ ] Create/update shared components:
-  - `Button` — primary, secondary, ghost, danger variants with hover animations
-  - `Card` — elevated, outlined, glass variants
-  - `Badge` — severity badges (critical/high/medium/low/safe) with color coding
-  - `Input`, `Textarea`, `Select` — form elements with validation states
-  - `StatusBadge` — incident status chips (pending/analyzing/reviewed/closed)
-  - `ThreatScore` — circular gauge (0-100) with color gradient
-  - `FileUpload` — drag-and-drop zone with preview
-  - `Skeleton` — loading placeholders
-  - `Modal` — dialog with backdrop
-  - `EmptyState` — illustrated empty states
-  - `PageHeader` — consistent page title + breadcrumb
-  - `DataTable` — sortable, filterable table component
-
-### Success Criteria
-- All components are reusable and properly typed (TypeScript)
-- Variants work correctly
-- Animations are smooth (60fps)
-- Components match design system tokens
-
-### Commits
-```
-style: add Button component with variants and animations
-style: add Card, Badge, and StatusBadge components
-style: add ThreatScore circular gauge component
-style: add FileUpload drag-and-drop component
-style: add DataTable with sorting and filtering
-style: add remaining shared components (Input, Modal, Skeleton, etc.)
-```
-
----
-
-## Step 4.3 — Navigation & Layout
-
-### Tasks
-- [ ] Create `AppLayout` component:
-  - Top navbar: Satark logo, nav links, auth status, user dropdown
-  - Responsive: mobile hamburger menu
-  - Sticky header with subtle shadow on scroll
-
-- [ ] Create navigation structure:
-  - Public: Home, Submit Incident, Track Case
-  - Analyst: Dashboard, Workbench
-  - Admin: Admin Panel
-  - Auth: Login, Register
-
-- [ ] Create `ProtectedRoute` wrapper:
-  - Redirects to login if not authenticated
-  - Checks role for analyst/admin routes
-
-- [ ] Create `AuthProvider` context:
-  - Stores JWT, user info
-  - Login/logout/register methods
-  - Auto-refresh token before expiry
-
-### Success Criteria
-- Navigation adapts to user role
-- Protected routes redirect correctly
-- Auth state persists across page refreshes (localStorage)
-- Mobile navigation works
-
-### Commits
-```
-feat: add AppLayout with responsive navbar
-feat: add AuthProvider context with JWT management
-feat: add ProtectedRoute wrapper for role-based access
-style: add Satark logo and branding to navbar
-```
-
----
-
-## Step 4.4 — Landing Page (/)
-
-### Tasks
-- [ ] Hero section:
-  - Satark shield logo (large, centered or left)
-  - Headline: "AI-Powered Cyber Incident Intelligence"
-  - Subheadline: "Analyze suspicious content in seconds using advanced AI"
-  - CTA buttons: "Report an Incident" + "Try It Now"
-  - Subtle animated background (grid pattern or gradient shift)
-
-- [ ] **"Try It Now" section** (THE key interactive feature):
-  - Tab interface: URL | Text | Image | Audio | File
-  - **URL tab:** Input field with 3 pre-loaded example URLs, "Scan" button
-  - **Text tab:** Textarea with pre-loaded suspicious SMS, "Analyze" button
-  - **Image tab:** Drag-and-drop zone + "Use Camera" button + 2 sample images
-  - **Audio tab:** "Record Audio" button (microphone) + sample audio file
-  - **File tab:** Drag-and-drop for PDF/docs + sample PDF
-  - Results appear in-place with animated reveal (threat score gauge, classification badge, IOC list)
-
-- [ ] Stats section:
-  - Animated counters: "X incidents analyzed", "Y threats detected", "Z active cases"
-
-- [ ] How It Works:
-  - 3-step visual: Submit → AI Analyzes → Get Results
-  - Clean iconography with micro-animations
-
-- [ ] Footer:
-  - SIH 2025 attribution, PS ID 25210, MoD/CERT-Army reference
-  - Tech stack badges
-
-### Success Criteria
-- First impression is "wow" — premium, modern, clean
-- "Try It Now" works end-to-end without login
-- Camera and microphone permissions requested only when buttons clicked
-- Example inputs produce real AI analysis results
-- Fully responsive (mobile + desktop)
-
-### Commits
-```
-feat: add landing page hero section with animated background
-feat: add "Try It Now" interactive demo section
-feat: add URL scanner tab with example URLs
-feat: add text analyzer tab with example messages
-feat: add image upload tab with camera integration
-feat: add audio recorder tab with microphone integration
-feat: add file upload tab with sample documents
-style: add landing page stats and "How It Works" sections
-style: add footer with SIH attribution
-```
-
----
-
-## Step 4.5 — Incident Submission Page (/submit)
-
-### Tasks
-- [ ] Full-form submission (more detailed than quick-scan):
-  - Input type selector (tabs or cards)
-  - Content input (URL/text field or file upload)
-  - Description textarea
-  - Optional: severity self-assessment
-  - Submit button with loading state
-
-- [ ] After submission:
-  - Show case number (SAT-2026-XXXXX)
-  - Show shareable link
-  - Animated redirect to case detail page
-
-### Success Criteria
-- Multi-file upload works (multiple evidence files)
-- Form validation prevents empty submissions
-- Case number displayed immediately
-
-### Commits
-```
-feat: add incident submission page with multi-type input
-feat: add multi-file evidence upload support
-feat: add submission success screen with case number
-```
-
----
-
-## Step 4.6 — Case Detail Page (/case/:id)
-
-### Tasks
-- [ ] Case header:
-  - Case number, status badge, priority badge, classification badge
-  - Threat score gauge (large, prominent)
-  - Timestamp and input type icon
-
-- [ ] AI Analysis section:
-  - Summary (text block)
-  - IOC list (copyable chips)
-  - Risk factors (bullet list)
-  - Mitigation playbook (numbered steps with checkboxes)
-  - Confidence meter
-
-- [ ] Evidence section:
-  - File thumbnails/previews
-  - Download links (via signed URLs)
-  - Checksum verification status
-
-- [ ] Audit trail:
-  - Timeline of all actions on this case
-  - Who did what, when
-
-- [ ] Actions (analyst view):
-  - Change status dropdown
-  - Change priority
-  - Add analyst notes (rich text)
-  - Assign to analyst
-  - Generate PDF report button
-
-### Success Criteria
-- Guest view (via shareable link) shows analysis results
-- Analyst view adds management controls
-- Threat score gauge is visually impactful
-- IOCs are individually copyable
-- PDF download works
-
-### Commits
-```
-feat: add case detail page with AI analysis display
-style: add threat score gauge and classification badges
-feat: add evidence file viewer with download links
-feat: add audit trail timeline
-feat: add analyst controls (status, priority, notes, assign)
-feat: add PDF report generation button
-```
-
----
-
-## Step 4.7 — Dashboard (/dashboard)
-
-### Tasks
-- [ ] Stats row:
-  - Total incidents, active cases, threats detected, avg threat score
-  - Each stat in a card with trend indicator (↑ ↓)
-
-- [ ] Charts (all 6):
-  - **A:** Incidents by type — donut chart (Recharts PieChart)
-  - **B:** Severity heatmap — calendar heatmap
-  - **C:** Geographic map — India SVG map with hotspot pins
-  - **D:** Top IOCs — sortable table with copy buttons
-  - **E:** Trend line — area chart with date range selector
-  - **F:** Confidence distribution — histogram (Recharts BarChart)
-
-- [ ] Date range filter (applies to all charts)
-- [ ] Auto-refresh toggle
-
-### Success Criteria
-- All 6 charts render correctly with backend data
-- Charts are interactive (hover tooltips, click to filter)
-- Responsive layout (2-column on desktop, 1-column on mobile)
-- Date range filtering works across all charts
-
-### Commits
-```
-feat: add dashboard stats cards with trend indicators
-feat: add incidents by type donut chart
-feat: add severity heatmap calendar chart
-feat: add geographic origin India map
-feat: add top IOCs table with copy functionality
-feat: add incident trend line with date range selector
-feat: add AI confidence distribution histogram
-style: add dashboard responsive layout and polish
-```
-
----
-
-## Step 4.8 — Workbench (/workbench)
-
-### Tasks
-- [ ] Case queue table:
-  - Sortable columns: case#, date, type, status, priority, classification, threat score
-  - Filter panel: status, priority, classification, date range
-  - Search bar (case number or description)
-  - Pagination
-
-- [ ] Quick actions:
-  - Bulk status change
-  - Bulk assign
-  - Click row → navigate to case detail
-
-- [ ] Status pipeline view (optional Kanban alternative):
-  - Columns: Pending → Analyzing → Reviewed → Escalated → Closed
-  - Drag-and-drop cards between columns
-
-### Success Criteria
-- Table loads all cases with pagination
-- Filters work correctly
-- Click-through to case detail works
-- Responsive on tablet+
-
-### Commits
-```
-feat: add workbench case queue with sorting and filtering
-feat: add workbench search and pagination
-feat: add workbench quick actions (bulk status, assign)
-style: add workbench responsive layout
-```
-
----
-
-## Step 4.9 — Admin Panel (/admin)
-
-### Tasks
-- [ ] User management:
-  - User list table (email, name, role, joined date)
-  - Edit role (dropdown: analyst/admin)
-  - Deactivate user
-
-- [ ] Platform stats:
-  - Total users, by role
-  - Total incidents, by status
-  - AI usage (total analyses, avg response time)
-
-### Success Criteria
-- Only admin can access
-- Role changes take effect immediately
-- Clean, minimal design
-
-### Commits
-```
-feat: add admin panel with user management
-feat: add admin platform statistics
-```
-
----
-
-## Step 4.10 — Auth Pages (/login, /register)
-
-### Tasks
-- [ ] Login page:
-  - Email + password form
-  - "Continue as Guest" link
-  - Error messages for invalid credentials
-  - Clean, centered card design
-
-- [ ] Register page:
-  - Email + password + display name
-  - Password strength indicator
-  - "Already have an account?" link
-
-### Success Criteria
-- Auth flow works end-to-end
-- Token stored in localStorage
-- Redirect to dashboard after login (analyst/admin) or home (guest)
-
-### Commits
-```
-feat: add login page with form validation
-feat: add register page with password strength
-```
-
----
-
-## Phase 4 Output
-
-At the end of Phase 4:
-- ✅ Complete design system with all components
-- ✅ 10 pages fully built and connected to backend
-- ✅ Interactive "Try It Now" demo with camera/mic
-- ✅ All 6 dashboard charts
-- ✅ Case management workbench
-- ✅ Admin panel
-- ✅ Auth flow (login/register/guest)
-- ✅ ~35 atomic commits
-- ✅ `npm run lint && npm run build` passes
-- ✅ Ready for Phase 5 (report generation + polish)

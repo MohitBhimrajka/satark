@@ -28,8 +28,14 @@
   - [x] Quick-scan endpoints: /api/analyze/text, /url, /file (no auth, no DB)
   - [x] analysis_failed status added to IncidentStatus
   - [x] AI_CONCURRENCY_LIMIT added to settings
-  - [x] 15 AI pipeline tests (all mocked, no real API calls)
-  - [x] Full test suite: 41 tests passing (26 Phase 2 + 15 Phase 3)
+  - [x] 19 AI pipeline tests (all mocked, no real API calls):
+    - ThreatAnalysis schema validation (2), score_to_priority (4), URL parsing (4),
+      text analyzer (2), URL analyzer grounded + fallback (2), quick-scan endpoints (2),
+      orchestrator success path (1), orchestrator failure path (1), background task enqueue (1)
+  - [x] Google Search grounding + URL Context added to URL analyzer via generate_grounded()
+  - [x] generate_grounded() function added to client.py for structured output + tools combo
+  - [x] UnboundLocalError fix in orchestrator.py (incident = None before try block)
+  - [x] Full test suite: 45 tests passing (26 Phase 2 + 19 Phase 3)
 
 ## In Progress
 - [/] Phase 4: Frontend Implementation

@@ -1,19 +1,19 @@
 # Active Context
 
 ## Currently Working On
-Phase 3 (AI Analysis Pipeline) — **COMPLETE**. Ready to begin Phase 4 (Frontend Implementation).
+Phase 3 (AI Analysis Pipeline) — **COMPLETE & FULLY AUDITED**. Ready to begin Phase 4 (Frontend Implementation).
 
 ## Current State
 - **Database**: Unchanged from Phase 2 — 4 tables (users, incidents, evidence_files, audit_logs) + satark_case_seq.
 - **AI Pipeline**: Fully implemented in `app/services/ai/`:
-  - `client.py` — Gemini singleton with retry (exponential backoff on 429) + `asyncio.Semaphore(5)` concurrency control
+  - `client.py` — Gemini singleton with retry (exponential backoff on 429) + `asyncio.Semaphore(5)` + `generate_grounded()` for Google Search + URL Context
   - `schemas.py` — Canonical `ThreatAnalysis` Pydantic model (re-exported from `app/schemas/analysis.py`)
   - `prompts.py` — `SYSTEM_PROMPT_BASE` + 6 modality-specific prompt templates
   - `orchestrator.py` — Routes incidents to correct analyzer, updates DB, handles errors → `analysis_failed` status
-  - `analyzers/` — 6 modules: text, URL, image, audio, video, document
+  - `analyzers/` — 6 modules: text, URL (grounded with Google Search + URL Context), image, audio, video, document
 - **Background Tasks**: Incident creation now triggers `analyze_incident` via `BackgroundTasks`
 - **Quick Scan Endpoints**: `/api/analyze/text`, `/api/analyze/url`, `/api/analyze/file` (no auth, no DB write)
-- **Test Suite**: 41 tests passing (26 Phase 2 + 15 Phase 3, all mocked)
+- **Test Suite**: **45 tests passing** (26 Phase 2 + 19 Phase 3, all mocked — no real API calls needed)
 - **Docker**: Not yet re-verified with `make up` (services are currently down)
 
 ## Immediate Next Steps
@@ -26,11 +26,11 @@ Phase 3 (AI Analysis Pipeline) — **COMPLETE**. Ready to begin Phase 4 (Fronten
 - GCP project ID unconfirmed — needed for Phase 6 deployment
 - Camera/mic require HTTPS — only testable on deployed URL
 
-## Recent Changes
-- Created `app/services/ai/` package with 6 analyzers, client, prompts, schemas, orchestrator
-- Added `/api/analyze/text|url|file` quick-scan endpoints (no auth, no DB)
-- Wired `BackgroundTasks.add_task(analyze_incident, ...)` into incident creation router
-- Added `analysis_failed` to `IncidentStatus.ALL`
-- Added `AI_CONCURRENCY_LIMIT` to settings
-- Added `mock_ai_background_task` autouse fixture in conftest (prevents tests from hitting PostgreSQL)
-- 9 atomic commits for Phase 3
+## Recent Changes (Final Phase 3 Audit — 2026-04-27)
+- Added `generate_grounded()` to client.py for structured output + Google Search grounding + URL Context tools
+- Upgraded URL analyzer to use Google Search + URL Context with fallback to standard analysis
+- Fixed potential `UnboundLocalError` in orchestrator.py (`incident = None` before try block)
+- Added 3 missing plan-required tests: orchestrator success, orchestrator failure, background task enqueue
+- Added URL analyzer fallback test (grounding failure → standard output)
+- Total: 19 Phase 3 tests, 45 full suite (all passing)
+- 12 atomic commits for Phase 3 (complete)

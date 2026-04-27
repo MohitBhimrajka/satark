@@ -13,6 +13,7 @@ export interface DashboardStats {
 export interface ChartDataPoint {
   label: string
   value: number
+  [key: string]: string | number
 }
 
 export interface ChartData {

@@ -21,34 +21,47 @@ logger = logging.getLogger(__name__)
 def check_db_connection():
     """
     Check if PostgreSQL is ready to accept connections.
-    Returns True if connection is successful, False otherwise.
+    Supports two modes:
+      1. DATABASE_URL (production / Cloud Run with Secret Manager)
+      2. Individual POSTGRES_* env vars (docker-compose / local dev)
     """
     try:
-        # Get database connection details from environment
-        db_host = os.getenv("POSTGRES_HOST", "postgres")
-        db_port = os.getenv("POSTGRES_PORT", "5432")
-        db_name = os.getenv("POSTGRES_DB", "app_db")
-        db_user = os.getenv("POSTGRES_USER", "user")
-        db_password = os.getenv("POSTGRES_PASSWORD", "password")
-        
-        # Attempt to connect
-        conn = psycopg2.connect(
-            host=db_host,
-            port=db_port,
-            database=db_name,
-            user=db_user,
-            password=db_password,
-            connect_timeout=5
-        )
-        conn.close()
-        logger.info("✅ Database connection successful!")
+        database_url = os.getenv("DATABASE_URL")
+
+        if database_url:
+            # Production path: use SQLAlchemy to parse the URL
+            # (handles Cloud SQL Unix socket ?host=/cloudsql/... format)
+            from sqlalchemy import create_engine, text
+            engine = create_engine(database_url, connect_args={"connect_timeout": 5})
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            engine.dispose()
+        else:
+            # Docker-compose path: use individual env vars
+            db_host = os.getenv("POSTGRES_HOST", "postgres")
+            db_port = os.getenv("POSTGRES_PORT", "5432")
+            db_name = os.getenv("POSTGRES_DB", "app_db")
+            db_user = os.getenv("POSTGRES_USER", "user")
+            db_password = os.getenv("POSTGRES_PASSWORD", "password")
+
+            conn = psycopg2.connect(
+                host=db_host,
+                port=db_port,
+                database=db_name,
+                user=db_user,
+                password=db_password,
+                connect_timeout=5,
+            )
+            conn.close()
+
+        logger.info("Database connection successful!")
         return True
-        
+
     except OperationalError as e:
         logger.debug(f"Database not ready: {e}")
         return False
     except Exception as e:
-        logger.error(f"Unexpected error checking database: {e}")
+        logger.debug(f"Database not ready: {e}")
         return False
 
 def wait_for_database(max_retries=30, delay=2):

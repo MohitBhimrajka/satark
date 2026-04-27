@@ -45,11 +45,11 @@ export function TryItNow() {
       if (activeTab === 'url' || activeTab === 'text') {
         const endpoint =
           activeTab === 'url' ? '/api/analyze/url' : '/api/analyze/text'
-        const res = await api.post<QuickScanResult>(endpoint, {
+        const res = await api.post<{ data: QuickScanResult }>(endpoint, {
           input_type: activeTab,
           content: input,
         })
-        setResult(res.analysis)
+        setResult(res.data.analysis)
       } else {
         setError(
           'File-based analysis (image, audio, documents) requires the full submission form. Use "Report an Incident" for file uploads.'

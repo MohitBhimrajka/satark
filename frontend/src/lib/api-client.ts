@@ -23,14 +23,6 @@ export function removeToken(): void {
 
 // ── Core Fetch Wrapper ───────────────────────────────────────────────────────
 
-interface ApiErrorPayload {
-  error: {
-    code: string
-    message: string
-    details: unknown[]
-  }
-}
-
 export class ApiClientError extends Error {
   code: string
   status: number
@@ -64,18 +56,24 @@ async function request<T = unknown>(
   })
 
   if (!response.ok) {
-    const errorData: ApiErrorPayload = await response.json().catch(() => ({
-      error: {
-        code: 'UNKNOWN',
-        message: response.statusText || 'An API error occurred.',
-        details: [],
-      },
-    }))
-    throw new ApiClientError(
-      errorData.error?.message || 'An API error occurred.',
-      errorData.error?.code || 'UNKNOWN',
-      response.status
-    )
+    let message = response.statusText || 'An API error occurred.'
+    let code = 'UNKNOWN'
+
+    try {
+      const errorData = await response.json()
+      if (typeof errorData.detail === 'string') {
+        message = errorData.detail
+      } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
+        message = errorData.detail.map((d: { msg?: string }) => d.msg || '').join(', ')
+      } else if (errorData.error?.message) {
+        message = errorData.error.message
+        code = errorData.error.code || 'UNKNOWN'
+      }
+    } catch {
+      // JSON parsing failed, use status text
+    }
+
+    throw new ApiClientError(message, code, response.status)
   }
 
   if (response.status === 204) {

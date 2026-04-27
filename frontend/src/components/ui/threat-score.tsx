@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
 
 interface ThreatScoreProps {
   score: number
@@ -53,8 +54,8 @@ export function ThreatScore({ score, size = 'md', className }: ThreatScoreProps)
           stroke='#F1F5F9'
           strokeWidth={strokeWidth}
         />
-        {/* Progress circle */}
-        <circle
+        {/* Animated progress circle */}
+        <motion.circle
           cx={svgSize / 2}
           cy={svgSize / 2}
           r={radius}
@@ -63,18 +64,30 @@ export function ThreatScore({ score, size = 'md', className }: ThreatScoreProps)
           strokeWidth={strokeWidth}
           strokeLinecap='round'
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className='transition-all duration-700 ease-out'
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
         />
       </svg>
       {/* Score text centered */}
       <div className='absolute inset-0 flex flex-col items-center justify-center'>
-        <span className={cn('font-bold', fontSize)} style={{ color }}>
+        <motion.span
+          className={cn('font-bold', fontSize)}
+          style={{ color }}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.5, type: 'spring', stiffness: 200 }}
+        >
           {score}
-        </span>
-        <span className={cn('font-medium text-gray-500', labelSize)}>
+        </motion.span>
+        <motion.span
+          className={cn('font-medium text-gray-500', labelSize)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.3 }}
+        >
           {getScoreLabel(score)}
-        </span>
+        </motion.span>
       </div>
     </div>
   )

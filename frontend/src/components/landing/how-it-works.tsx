@@ -1,4 +1,7 @@
+'use client'
+
 import { Upload, Brain, FileCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 const STEPS = [
   {
@@ -21,26 +24,52 @@ const STEPS = [
   },
 ]
 
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.2, delayChildren: 0.1 },
+  },
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } },
+}
+
 export function HowItWorks() {
   return (
     <section className='px-4 py-20'>
       <div className='mx-auto max-w-4xl'>
-        <div className='mb-12 text-center'>
+        <motion.div
+          className='mb-12 text-center'
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           <h2 className='text-3xl font-bold tracking-tight text-navy-900'>
             How It Works
           </h2>
           <p className='mt-3 text-gray-500'>
             Three simple steps to analyze any suspicious content.
           </p>
-        </div>
+        </motion.div>
 
-        <div className='stagger-children grid grid-cols-1 gap-6 sm:grid-cols-3'>
+        <motion.div
+          className='grid grid-cols-1 gap-6 sm:grid-cols-3'
+          variants={containerVariants}
+          initial='hidden'
+          whileInView='visible'
+          viewport={{ once: true, amount: 0.3 }}
+        >
           {STEPS.map((step, i) => {
             const Icon = step.icon
             return (
-              <div
+              <motion.div
                 key={step.title}
+                variants={cardVariants}
                 className='relative rounded-xl border border-gray-200 bg-white p-6 shadow-soft transition-shadow hover:shadow-medium'
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
               >
                 {/* Step number */}
                 <span className='absolute -top-3 left-6 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white'>
@@ -55,10 +84,10 @@ export function HowItWorks() {
                 <p className='mt-2 text-sm leading-relaxed text-gray-500'>
                   {step.description}
                 </p>
-              </div>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

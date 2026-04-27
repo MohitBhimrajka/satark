@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
+import { PageTransition } from '@/components/layout/page-transition'
 
 export default function ProtectedLayout({
   children,
@@ -41,7 +42,9 @@ export default function ProtectedLayout({
         style={{ marginLeft: 'var(--sidebar-width, 260px)' }}
       >
         <Header />
-        <main className='flex-1 bg-gray-50 p-6 lg:p-8'>{children}</main>
+        <main className='flex-1 bg-gray-50 p-6 lg:p-8'>
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.database import get_db
 from app.models.user import User
@@ -15,6 +16,21 @@ from app.security import get_current_user, require_role
 from app.services.audit import log_action
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+@router.get("/stats", dependencies=[Depends(require_role("admin"))])
+def admin_stats(db: Session = Depends(get_db)):
+    """Platform-wide admin statistics. Admin only."""
+    total_users = db.query(func.count(User.id)).scalar() or 0
+    role_counts = dict(
+        db.query(User.role, func.count(User.id))
+        .group_by(User.role)
+        .all()
+    )
+    return {
+        "total_users": total_users,
+        "by_role": role_counts,
+    }
 
 
 @router.get("/users", dependencies=[Depends(require_role("admin"))])

@@ -10,7 +10,7 @@
 
 | Service | URL |
 |---------|-----|
-| 🌐 Frontend | [satark-frontend-1094555524365.asia-south1.run.app](https://satark-frontend-1094555524365.asia-south1.run.app) |
+| 🌐 Frontend | [satark.mohitbhimrajka.com](satark.mohitbhimrajka.com) |
 | ⚙️ Backend API | [satark-backend-1094555524365.asia-south1.run.app](https://satark-backend-1094555524365.asia-south1.run.app) |
 | 📖 API Docs | [/docs](https://satark-backend-1094555524365.asia-south1.run.app/docs) |
 | ❤️ Health | [/health](https://satark-backend-1094555524365.asia-south1.run.app/health) |
